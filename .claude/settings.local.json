@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la /c/dev/DotNet-SUS/AL/nab-al-tools/extension/src/*.ts)",
+      "Bash(ls:*)",
+      "Bash(xargs wc:*)",
+      "Bash(find /c/dev/DotNet-SUS/AL/nab-al-tools -type f -name *.al)",
+      "mcp__microsoft-learn__microsoft_docs_search",
+      "mcp__microsoft-learn__microsoft_docs_fetch",
+      "mcp__microsoft-learn__microsoft_code_sample_search",
+      "WebSearch",
+      "Bash(dotnet --version)",
+      "Bash(mkdir -p C:/dev/DotNet-SUS/AL/nab-al-tools/web)",
+      "Bash(dotnet new:*)",
+      "Bash(dotnet add:*)",
+      "Bash(dotnet list:*)",
+      "Bash(dotnet tool:*)",
+      "Bash(dotnet ~/.nuget/packages/modelcontextprotocol.core/*/lib/net10.0/*.dll)",
+      "Read(//c/Users/rela02/.nuget/packages/**)",
+      "Bash(grep -i \"McpClientFactory\\\\|class McpClient\" ~/.nuget/packages/modelcontextprotocol*/1.1.0/lib/net10.0/*.xml)",
+      "Bash(grep -i \"RunAsync\\\\|RunStreamingAsync\\\\|Thread\\\\|ChatMessage\\\\|conversation\\\\|history\\\\|IList.*ChatMessage\\\\|ChatOptions\" ~/.nuget/packages/microsoft.agents.ai/*/lib/net10.0/*.xml)",
+      "Bash(grep -A5 'member name=M:Microsoft.Agents.AI.AIAgent.RunAsync' ~/.nuget/packages/microsoft.agents.ai/*/lib/net10.0/*.xml)",
+      "Bash(grep:*)",
+      "Bash(find:*)"
+    ]
+  }
+}

@@ -1,0 +1,156 @@
+@page "/"
+@inject McpBridgeService McpBridge
+@inject SessionStateService Session
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Setup - NAB XLIFF</PageTitle>
+
+<div class="page-header">
+    <h1>Project Setup</h1>
+    <p class="subtitle">Connect to an AL app folder to start managing translations</p>
+</div>
+
+<div class="setup-card">
+    <div class="form-section">
+        <label class="form-label">AL App Folder Path</label>
+        <div class="input-group">
+            <input type="text" class="form-control" @bind="appFolderPath"
+                   placeholder="C:\path\to\your\al-app" disabled="@isLoading" />
+        </div>
+        <small class="form-hint">The folder containing app.json and the Translations subfolder</small>
+    </div>
+
+    <div class="form-section">
+        <label class="form-label">Workspace File Path (optional)</label>
+        <div class="input-group">
+            <input type="text" class="form-control" @bind="workspaceFilePath"
+                   placeholder="C:\path\to\workspace.code-workspace" disabled="@isLoading" />
+        </div>
+        <small class="form-hint">Path to .code-workspace file for additional translation settings</small>
+    </div>
+
+    <div class="form-actions">
+        <button class="btn btn-primary btn-lg" @onclick="InitializeAsync" disabled="@(isLoading || string.IsNullOrWhiteSpace(appFolderPath))">
+            @if (isLoading)
+            {
+                <span class="spinner"></span>
+                <span>Connecting...</span>
+            }
+            else
+            {
+                <span>Initialize</span>
+            }
+        </button>
+    </div>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-error">@errorMessage</div>
+    }
+
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success">@successMessage</div>
+    }
+</div>
+
+@if (McpBridge.IsInitialized && xlfFiles.Count > 0)
+{
+    <div class="setup-card">
+        <h2>Translation Files</h2>
+        <p class="subtitle">Select an XLF file to work with</p>
+
+        <div class="xlf-file-list">
+            @foreach (var file in xlfFiles)
+            {
+                <div class="xlf-file-item @(Session.XlfFilePath == file ? "active" : "")"
+                     @onclick="() => SelectXlfFile(file)">
+                    <span class="file-icon">&#128196;</span>
+                    <div class="file-info">
+                        <span class="file-name">@System.IO.Path.GetFileName(file)</span>
+                        <span class="file-path">@file</span>
+                    </div>
+                    @if (Session.XlfFilePath == file)
+                    {
+                        <span class="check-icon">&#10003;</span>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private string appFolderPath = "";
+    private string? workspaceFilePath;
+    private bool isLoading;
+    private string? errorMessage;
+    private string? successMessage;
+    private List<string> xlfFiles = [];
+
+    protected override void OnInitialized()
+    {
+        if (!string.IsNullOrEmpty(Session.AppFolderPath))
+        {
+            appFolderPath = Session.AppFolderPath;
+            workspaceFilePath = Session.WorkspaceFilePath;
+        }
+        if (Session.AvailableXlfFiles.Count > 0)
+        {
+            xlfFiles = Session.AvailableXlfFiles;
+        }
+    }
+
+    private async Task InitializeAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            await McpBridge.InitializeAsync(appFolderPath, workspaceFilePath);
+            Session.AppFolderPath = appFolderPath;
+            Session.WorkspaceFilePath = workspaceFilePath;
+
+            // Find XLF files in the Translations folder
+            var translationsFolder = System.IO.Path.Combine(appFolderPath, "Translations");
+            if (System.IO.Directory.Exists(translationsFolder))
+            {
+                xlfFiles = System.IO.Directory.GetFiles(translationsFolder, "*.xlf")
+                    .Where(f => !f.EndsWith(".g.xlf", StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(f => f)
+                    .ToList();
+                Session.AvailableXlfFiles = xlfFiles;
+
+                if (xlfFiles.Count == 1)
+                {
+                    SelectXlfFile(xlfFiles[0]);
+                }
+            }
+
+            successMessage = $"Connected successfully. Found {xlfFiles.Count} translation file(s).";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void SelectXlfFile(string filePath)
+    {
+        Session.XlfFilePath = filePath;
+        // Extract target language from filename (e.g., MyApp.da-DK.xlf -> da-DK)
+        var fileName = System.IO.Path.GetFileNameWithoutExtension(filePath);
+        var parts = fileName.Split('.');
+        if (parts.Length >= 2)
+        {
+            Session.TargetLanguage = parts[^1];
+        }
+    }
+}

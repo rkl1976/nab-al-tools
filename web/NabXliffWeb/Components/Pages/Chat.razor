@@ -1,0 +1,378 @@
+@page "/chat"
+@inject McpBridgeService McpBridge
+@inject SessionStateService Session
+@inject TranslationAgentService AgentService
+@inject ILogger<Chat> Logger
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+
+<PageTitle>Chat - NAB XLIFF</PageTitle>
+
+<div class="chat-container">
+    <div class="chat-header">
+        <h1>Translation Chat</h1>
+        <div class="chat-header-info">
+            @if (!string.IsNullOrEmpty(Session.XlfFilePath))
+            {
+                <span class="file-badge">@System.IO.Path.GetFileName(Session.XlfFilePath)</span>
+            }
+            @if (!string.IsNullOrEmpty(Session.TargetLanguage))
+            {
+                <span class="lang-badge">@Session.TargetLanguage</span>
+            }
+        </div>
+    </div>
+
+    <div class="chat-messages" @ref="messagesContainer">
+        @if (messages.Count == 0)
+        {
+            <div class="chat-welcome">
+                <div class="welcome-icon">T</div>
+                <h2>NAB XLIFF Translation Assistant</h2>
+                <p>Ask me anything about your translations. I can:</p>
+                <div class="welcome-suggestions">
+                    <button class="suggestion-chip" @onclick="@(() => SendSuggestion("Show me the first 10 untranslated texts"))">
+                        Show untranslated texts
+                    </button>
+                    <button class="suggestion-chip" @onclick="@(() => SendSuggestion("Translate the first 5 untranslated texts"))">
+                        Translate 5 texts
+                    </button>
+                    <button class="suggestion-chip" @onclick="@(() => SendSuggestion("Show me all texts that need review"))">
+                        Show texts needing review
+                    </button>
+                    <button class="suggestion-chip" @onclick="@(() => SendSuggestion("Search for 'Customer' in the translations"))">
+                        Search for a term
+                    </button>
+                    <button class="suggestion-chip" @onclick="@(() => SendSuggestion("Show me the glossary terms"))">
+                        Show glossary
+                    </button>
+                    <button class="suggestion-chip" @onclick="@(() => SendSuggestion("Refresh the XLF file"))">
+                        Refresh XLF
+                    </button>
+                </div>
+            </div>
+        }
+
+        @foreach (var msg in messages)
+        {
+            <div class="chat-message @(msg.IsUser ? "user" : "assistant")">
+                <div class="message-avatar">
+                    @if (msg.IsUser)
+                    {
+                        <span>U</span>
+                    }
+                    else
+                    {
+                        <span>T</span>
+                    }
+                </div>
+                <div class="message-content">
+                    @if (msg.IsUser)
+                    {
+                        <p>@msg.Text</p>
+                    }
+                    else
+                    {
+                        @((MarkupString)RenderMarkdown(msg.Text))
+                    }
+                </div>
+            </div>
+        }
+
+        @if (isStreaming)
+        {
+            <div class="chat-message assistant">
+                <div class="message-avatar"><span>T</span></div>
+                <div class="message-content">
+                    @if (!string.IsNullOrEmpty(streamingText))
+                    {
+                        @((MarkupString)RenderMarkdown(streamingText))
+                    }
+                    <span class="typing-indicator">
+                        <span></span><span></span><span></span>
+                    </span>
+                </div>
+            </div>
+        }
+    </div>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="chat-error">@errorMessage</div>
+    }
+
+    @if (!AgentService.IsConfigured)
+    {
+        <div class="chat-error">Azure OpenAI is not configured. Go to Settings to set it up.</div>
+    }
+    else if (!McpBridge.IsInitialized)
+    {
+        <div class="chat-error">MCP server not initialized. Go to Setup first.</div>
+    }
+
+    <div class="chat-input-area">
+        <div class="chat-input-wrapper">
+            <textarea class="chat-input" @bind="userInput" @bind:event="oninput"
+                      @onkeydown="OnKeyDown"
+                      placeholder="Ask about your translations..."
+                      disabled="@(!AgentService.IsConfigured || !McpBridge.IsInitialized || isStreaming)"
+                      rows="1"></textarea>
+            <button class="chat-send-btn" @onclick="SendMessageAsync"
+                    disabled="@(string.IsNullOrWhiteSpace(userInput) || isStreaming || !AgentService.IsConfigured || !McpBridge.IsInitialized)">
+                &#10148;
+            </button>
+        </div>
+        <div class="chat-input-hint">
+            Press Enter to send, Shift+Enter for new line
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<ChatMessageDisplay> messages = [];
+    private string userInput = "";
+    private string streamingText = "";
+    private bool isStreaming;
+    private string? errorMessage;
+    private ElementReference messagesContainer;
+    private Microsoft.Agents.AI.AIAgent? agent;
+    private Microsoft.Agents.AI.AgentSession? session;
+    private CancellationTokenSource? streamingCts;
+
+    private class ChatMessageDisplay
+    {
+        public string Text { get; set; } = "";
+        public bool IsUser { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Logger.LogInformation("[Chat] Initializing chat page. Configured={Configured}, Initialized={Initialized}, XlfFile={Xlf}, Lang={Lang}",
+            AgentService.IsConfigured, McpBridge.IsInitialized, Session.XlfFilePath ?? "(none)", Session.TargetLanguage ?? "(none)");
+
+        if (AgentService.IsConfigured && McpBridge.IsInitialized)
+        {
+            try
+            {
+                Logger.LogInformation("[Chat] Creating chat agent and session...");
+                agent = await AgentService.CreateChatAgentAsync(Session.TargetLanguage);
+                session = await agent.CreateSessionAsync();
+                Logger.LogInformation("[Chat] Agent and session created successfully");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "[Chat] Failed to create agent");
+                errorMessage = $"Failed to create agent: {ex.Message}";
+            }
+        }
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey)
+        {
+            await SendMessageAsync();
+        }
+    }
+
+    private async Task SendSuggestion(string text)
+    {
+        userInput = text;
+        await SendMessageAsync();
+    }
+
+    private async Task SendMessageAsync()
+    {
+        if (string.IsNullOrWhiteSpace(userInput) || isStreaming || agent is null || session is null)
+            return;
+
+        var messageText = userInput.Trim();
+        userInput = "";
+        errorMessage = null;
+
+        Logger.LogInformation("[Chat] >>> User message: {Message}", messageText);
+        messages.Add(new ChatMessageDisplay { Text = messageText, IsUser = true });
+
+        isStreaming = true;
+        streamingText = "";
+        streamingCts = new CancellationTokenSource();
+        StateHasChanged();
+
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var chunkCount = 0;
+
+        try
+        {
+            Logger.LogInformation("[Chat] Starting streaming response...");
+            await foreach (var update in agent.RunStreamingAsync(messageText, session,
+                cancellationToken: streamingCts.Token))
+            {
+                var text = update?.Text;
+                if (!string.IsNullOrEmpty(text))
+                {
+                    chunkCount++;
+                    streamingText += text;
+                    StateHasChanged();
+                }
+            }
+
+            Logger.LogInformation("[Chat] <<< Assistant response completed in {ElapsedMs}ms, {ChunkCount} chunks, {Length} chars",
+                sw.ElapsedMilliseconds, chunkCount, streamingText.Length);
+            Logger.LogInformation("[Chat] <<< Full response:\n{Response}", streamingText);
+
+            messages.Add(new ChatMessageDisplay { Text = streamingText, IsUser = false });
+        }
+        catch (OperationCanceledException)
+        {
+            Logger.LogWarning("[Chat] Response cancelled by user after {ElapsedMs}ms", sw.ElapsedMilliseconds);
+            if (!string.IsNullOrEmpty(streamingText))
+                messages.Add(new ChatMessageDisplay { Text = streamingText + "\n\n*(cancelled)*", IsUser = false });
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "[Chat] Error during streaming response after {ElapsedMs}ms", sw.ElapsedMilliseconds);
+            errorMessage = ex.Message;
+            messages.Add(new ChatMessageDisplay { Text = $"Error: {ex.Message}", IsUser = false });
+        }
+        finally
+        {
+            isStreaming = false;
+            streamingText = "";
+            streamingCts?.Dispose();
+            streamingCts = null;
+            StateHasChanged();
+        }
+    }
+
+    private static string RenderMarkdown(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return "";
+
+        // Basic markdown rendering - enough for tables, code blocks, bold, lists
+        var html = text;
+
+        // Escape HTML
+        html = html.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
+
+        // Code blocks
+        html = System.Text.RegularExpressions.Regex.Replace(html,
+            @"```(\w*)\n([\s\S]*?)```",
+            "<pre class=\"code-block\"><code>$2</code></pre>");
+
+        // Inline code
+        html = System.Text.RegularExpressions.Regex.Replace(html,
+            @"`([^`]+)`",
+            "<code class=\"inline-code\">$1</code>");
+
+        // Bold
+        html = System.Text.RegularExpressions.Regex.Replace(html,
+            @"\*\*(.+?)\*\*",
+            "<strong>$1</strong>");
+
+        // Tables - detect lines with | separators
+        html = RenderTables(html);
+
+        // Headers
+        html = System.Text.RegularExpressions.Regex.Replace(html,
+            @"^### (.+)$",
+            "<h4>$1</h4>",
+            System.Text.RegularExpressions.RegexOptions.Multiline);
+        html = System.Text.RegularExpressions.Regex.Replace(html,
+            @"^## (.+)$",
+            "<h3>$1</h3>",
+            System.Text.RegularExpressions.RegexOptions.Multiline);
+
+        // Bullet lists
+        html = System.Text.RegularExpressions.Regex.Replace(html,
+            @"^- (.+)$",
+            "<li>$1</li>",
+            System.Text.RegularExpressions.RegexOptions.Multiline);
+        html = System.Text.RegularExpressions.Regex.Replace(html,
+            @"(<li>.*</li>\n?)+",
+            m => "<ul>" + m.Value + "</ul>");
+
+        // Numbered lists
+        html = System.Text.RegularExpressions.Regex.Replace(html,
+            @"^\d+\. (.+)$",
+            "<li>$1</li>",
+            System.Text.RegularExpressions.RegexOptions.Multiline);
+
+        // Paragraphs - double newlines
+        html = System.Text.RegularExpressions.Regex.Replace(html,
+            @"\n\n+",
+            "</p><p>");
+
+        // Single newlines to <br>
+        html = html.Replace("\n", "<br/>");
+
+        return "<p>" + html + "</p>";
+    }
+
+    private static string RenderTables(string text)
+    {
+        var lines = text.Split('\n');
+        var result = new System.Text.StringBuilder();
+        var inTable = false;
+        var headerDone = false;
+
+        foreach (var line in lines)
+        {
+            var trimmed = line.Trim();
+            if (trimmed.StartsWith('|') && trimmed.EndsWith('|'))
+            {
+                // Check if it's a separator line (|---|---|)
+                if (System.Text.RegularExpressions.Regex.IsMatch(trimmed, @"^\|[\s\-:]+(\|[\s\-:]+)+\|$"))
+                {
+                    headerDone = true;
+                    continue;
+                }
+
+                if (!inTable)
+                {
+                    result.Append("<table class=\"md-table\">");
+                    inTable = true;
+                    headerDone = false;
+                }
+
+                var cells = trimmed.Split('|', StringSplitOptions.RemoveEmptyEntries);
+                var tag = !headerDone ? "th" : "td";
+                var rowClass = !headerDone ? " class=\"table-header-row\"" : "";
+                result.Append($"<tr{rowClass}>");
+                foreach (var cell in cells)
+                {
+                    result.Append($"<{tag}>{cell.Trim()}</{tag}>");
+                }
+                result.Append("</tr>");
+
+                if (!headerDone)
+                    headerDone = true;
+            }
+            else
+            {
+                if (inTable)
+                {
+                    result.Append("</table>");
+                    inTable = false;
+                    headerDone = false;
+                }
+                result.Append(line);
+                result.Append('\n');
+            }
+        }
+
+        if (inTable)
+            result.Append("</table>");
+
+        return result.ToString();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        streamingCts?.Cancel();
+        streamingCts?.Dispose();
+        if (session is IAsyncDisposable disposableSession)
+            await disposableSession.DisposeAsync();
+        else if (session is IDisposable disposableSession2)
+            disposableSession2.Dispose();
+    }
+}

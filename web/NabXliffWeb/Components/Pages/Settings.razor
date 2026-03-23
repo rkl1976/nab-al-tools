@@ -1,0 +1,95 @@
+@page "/settings"
+@inject IConfiguration Configuration
+@rendermode InteractiveServer
+
+<PageTitle>Settings - NAB XLIFF</PageTitle>
+
+<div class="page-header">
+    <h1>Settings</h1>
+    <p class="subtitle">Configure Azure OpenAI connection for AI-powered translations</p>
+</div>
+
+<div class="setup-card">
+    <h2>Azure OpenAI</h2>
+
+    <div class="form-section">
+        <label class="form-label">Endpoint</label>
+        <input type="text" class="form-control" value="@endpoint" disabled
+               placeholder="https://your-resource.openai.azure.com" />
+        <small class="form-hint">Set via appsettings.json or environment variable AzureOpenAI__Endpoint</small>
+    </div>
+
+    <div class="form-section">
+        <label class="form-label">Deployment Name</label>
+        <input type="text" class="form-control" value="@deploymentName" disabled />
+        <small class="form-hint">Set via appsettings.json or environment variable AzureOpenAI__DeploymentName</small>
+    </div>
+
+    <div class="form-section">
+        <label class="form-label">API Key</label>
+        <input type="password" class="form-control" value="@(string.IsNullOrEmpty(apiKey) ? "" : "********")" disabled />
+        <small class="form-hint">Set via appsettings.json, environment variable, or use DefaultAzureCredential (leave empty)</small>
+    </div>
+
+    <div class="status-info">
+        @if (!string.IsNullOrEmpty(endpoint))
+        {
+            <span class="status-badge connected">Configured</span>
+        }
+        else
+        {
+            <span class="status-badge disconnected">Not configured</span>
+        }
+    </div>
+</div>
+
+<div class="setup-card">
+    <h2>MCP Server</h2>
+
+    <div class="form-section">
+        <label class="form-label">Command</label>
+        <input type="text" class="form-control" value="@mcpCommand" disabled />
+    </div>
+
+    <div class="form-section">
+        <label class="form-label">Arguments</label>
+        <input type="text" class="form-control" value="@mcpArguments" disabled />
+    </div>
+
+    <small class="form-hint">MCP server settings are configured via appsettings.json</small>
+</div>
+
+<div class="setup-card">
+    <h2>Configuration Guide</h2>
+    <p>Configure settings in <code>appsettings.json</code> or via environment variables:</p>
+    <pre class="code-block"><code>{
+  "AzureOpenAI": {
+    "Endpoint": "https://your-resource.openai.azure.com",
+    "DeploymentName": "gpt-4o",
+    "ApiKey": ""
+  }
+}</code></pre>
+    <p>Or use environment variables:</p>
+    <pre class="code-block"><code>AzureOpenAI__Endpoint=https://your-resource.openai.azure.com
+AzureOpenAI__DeploymentName=gpt-4o
+AzureOpenAI__ApiKey=your-key</code></pre>
+    <p>If ApiKey is empty, <code>DefaultAzureCredential</code> will be used (az login, managed identity, etc.)</p>
+</div>
+
+@code {
+    private string? endpoint;
+    private string? deploymentName;
+    private string? apiKey;
+    private string? mcpCommand;
+    private string? mcpArguments;
+
+    protected override void OnInitialized()
+    {
+        endpoint = Configuration["AzureOpenAI:Endpoint"];
+        deploymentName = Configuration["AzureOpenAI:DeploymentName"] ?? "gpt-4o";
+        apiKey = Configuration["AzureOpenAI:ApiKey"];
+        mcpCommand = Configuration["McpServer:Command"] ?? "npx";
+        var args = Configuration.GetSection("McpServer:Arguments").Get<string[]>();
+        mcpArguments = args is not null ? string.Join(" ", args) : "-y @nabsolutions/nab-al-tools-mcp";
+    }
+}
