@@ -12,7 +12,10 @@
 
 @if (string.IsNullOrEmpty(Session.XlfFilePath))
 {
-    <div class="alert alert-info">Please select a translation file on the Setup page first.</div>
+    <div class="empty-state">
+        <p>No translation file selected.</p>
+        <a class="btn btn-primary" href="/">Go to Setup</a>
+    </div>
 }
 else
 {

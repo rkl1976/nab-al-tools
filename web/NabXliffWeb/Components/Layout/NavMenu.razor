@@ -1,4 +1,5 @@
 @inject McpBridgeService McpBridge
+@inject SessionStateService Session
 
 <div class="nav-sidebar">
     <div class="nav-brand">
@@ -34,10 +35,36 @@
                 <span>Search</span>
             </NavLink>
         }
+        else
+        {
+            <span class="nav-item disabled">
+                <span class="nav-icon">&#128172;</span>
+                <span>Chat</span>
+            </span>
+            <span class="nav-item disabled">
+                <span class="nav-icon">&#9998;</span>
+                <span>Translate</span>
+            </span>
+            <span class="nav-item disabled">
+                <span class="nav-icon">&#10003;</span>
+                <span>Review</span>
+            </span>
+            <span class="nav-item disabled">
+                <span class="nav-icon">&#128269;</span>
+                <span>Search</span>
+            </span>
+        }
 
         <NavLink class="nav-item" href="settings">
             <span class="nav-icon">&#9881;</span>
             <span>Settings</span>
+        </NavLink>
+
+        <div class="nav-divider"></div>
+
+        <NavLink class="nav-item" href="docs">
+            <span class="nav-icon">&#128214;</span>
+            <span>Docs</span>
         </NavLink>
     </nav>
 
@@ -45,6 +72,10 @@
         @if (McpBridge.IsInitialized)
         {
             <div class="status-badge connected">Connected</div>
+            @if (!string.IsNullOrEmpty(Session.TargetLanguage))
+            {
+                <div class="status-lang">@Session.TargetLanguage</div>
+            }
         }
         else
         {

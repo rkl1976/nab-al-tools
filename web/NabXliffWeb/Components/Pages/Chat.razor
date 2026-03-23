@@ -103,11 +103,11 @@
 
     @if (!AgentService.IsConfigured)
     {
-        <div class="chat-error">Azure OpenAI is not configured. Go to Settings to set it up.</div>
+        <div class="chat-error">Azure OpenAI is not configured. <a href="/settings">Go to Settings</a> to set it up.</div>
     }
     else if (!McpBridge.IsInitialized)
     {
-        <div class="chat-error">MCP server not initialized. Go to Setup first.</div>
+        <div class="chat-error">MCP server not initialized. <a href="/">Go to Setup</a> first.</div>
     }
 
     <div class="chat-input-area">

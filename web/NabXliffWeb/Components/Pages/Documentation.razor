@@ -1,0 +1,520 @@
+@page "/docs"
+@rendermode InteractiveServer
+
+<PageTitle>Documentation - NAB XLIFF</PageTitle>
+
+<div class="docs-page">
+
+    @* ===== Hero ===== *@
+    <div class="docs-hero">
+        <div class="docs-hero-badge">Open Source &middot; VS Code Extension</div>
+        <h1>NAB AL Tools</h1>
+        <p class="docs-hero-sub">
+            Et komplet v&aelig;rkt&oslash;jss&aelig;t til XLIFF-overs&aelig;ttelser, dokumentationsgenerering og
+            AI-assisteret udvikling i Microsoft Dynamics 365 Business Central.
+        </p>
+        <div class="docs-hero-stats">
+            <div class="docs-stat">
+                <span class="docs-stat-num">100+</span>
+                <span class="docs-stat-label">Kommandoer</span>
+            </div>
+            <div class="docs-stat">
+                <span class="docs-stat-num">10</span>
+                <span class="docs-stat-label">AI-v&aelig;rkt&oslash;jer</span>
+            </div>
+            <div class="docs-stat">
+                <span class="docs-stat-num">90+</span>
+                <span class="docs-stat-label">Indstillinger</span>
+            </div>
+            <div class="docs-stat">
+                <span class="docs-stat-num">3</span>
+                <span class="docs-stat-label">Indgangspunkter</span>
+            </div>
+        </div>
+    </div>
+
+    @* ===== Navigation Tabs ===== *@
+    <div class="docs-tabs">
+        @foreach (var tab in tabs)
+        {
+            <button class="docs-tab @(activeTab == tab.Id ? "active" : "")"
+                    @onclick="() => activeTab = tab.Id">
+                <span class="docs-tab-icon">@tab.Icon</span>
+                @tab.Label
+            </button>
+        }
+    </div>
+
+    @* ===== Section: Oversigt ===== *@
+    @if (activeTab == "overview")
+    {
+        <div class="docs-section">
+            <div class="docs-section-label">01 &mdash; Hvad er det?</div>
+            <h2 class="docs-section-title">Et komplet v&aelig;rkt&oslash;jss&aelig;t til AL-udvikling</h2>
+            <p class="docs-section-desc">
+                N&aring;r du udvikler apps til Microsoft Dynamics 365 Business Central, skriver du kode i sproget <strong>AL</strong>.
+                Al brugertekst (knapper, felter, menuer) skal overs&aelig;ttes til flere sprog via <strong>XLIFF-filer</strong>
+                &mdash; XML-baserede overs&aelig;ttelsesfiler. NAB AL Tools g&oslash;r hele denne proces automatisk, fejlfri og AI-assisteret.
+            </p>
+
+            <div class="docs-card-grid">
+                <div class="docs-feature-card">
+                    <div class="docs-card-icon">&#9997;</div>
+                    <h3>XLIFF-overs&aelig;ttelse</h3>
+                    <p>Synkroniserer automatisk overs&aelig;ttelsesfiler med din kode. Find uoversatte tekster, match mod Microsofts egne overs&aelig;ttelser, og h&aring;ndter status for hver enkelt overs&aelig;ttelse.</p>
+                </div>
+                <div class="docs-feature-card">
+                    <div class="docs-card-icon accent-blue">&#129302;</div>
+                    <h3>AI-integration</h3>
+                    <p>Registrerer v&aelig;rkt&oslash;jer direkte i VS Codes Language Model API og via MCP-serveren. AI-agenter kan overs&aelig;tte, gennemg&aring; og vedligeholde dine overs&aelig;ttelser autonomt.</p>
+                </div>
+                <div class="docs-feature-card">
+                    <div class="docs-card-icon accent-green">&#128196;</div>
+                    <h3>Dokumentation</h3>
+                    <p>Genererer automatisk markdown-dokumentation for alle AL-objekter med YAML-front matter, indholdsfortegnelser og tooltip-reference.</p>
+                </div>
+                <div class="docs-feature-card">
+                    <div class="docs-card-icon accent-red">&#9881;</div>
+                    <h3>CLI &amp; CI/CD</h3>
+                    <p>Standalone kommandolinje-v&aelig;rkt&oslash;jer der k&oslash;rer uden VS Code. Perfekt til build-pipelines, GitHub Actions og automatiserede valideringer.</p>
+                </div>
+                <div class="docs-feature-card">
+                    <div class="docs-card-icon accent-purple">&#128274;</div>
+                    <h3>Permission Sets</h3>
+                    <p>Autogenerer tilladelsess&aelig;t for alle AL-objekter og konverter mellem formater. Slut med manuelt vedligehold af tilladelser.</p>
+                </div>
+                <div class="docs-feature-card">
+                    <div class="docs-card-icon accent-blue">&#128203;</div>
+                    <h3>CSV Import/Eksport</h3>
+                    <p>Eksporter overs&aelig;ttelser til CSV for ekstern review, og importer dem direkte tilbage med korrekt statusmapping.</p>
+                </div>
+            </div>
+
+            @* XLIFF Forklaring *@
+            <h2 class="docs-section-title" style="margin-top: 3rem;">Hvad er XLIFF?</h2>
+            <p class="docs-section-desc">
+                XLIFF (XML Localisation Interchange File Format) er en international standard for udveksling af overs&aelig;ttelsesdata.
+                I Business Central-verdenen fungerer det s&aring;dan her:
+            </p>
+
+            <div class="docs-dataflow">
+                <div class="docs-df-node df-blue">
+                    <div class="docs-df-label">AL-kode</div>
+                    <div class="docs-df-sub">din kildekode</div>
+                </div>
+                <div class="docs-df-arrow">&#8594;</div>
+                <div class="docs-df-node df-gold">
+                    <div class="docs-df-label">g.xlf</div>
+                    <div class="docs-df-sub">auto-genereret</div>
+                </div>
+                <div class="docs-df-arrow">&#8594;</div>
+                <div class="docs-df-node df-purple">
+                    <div class="docs-df-label">NAB AL Tools</div>
+                    <div class="docs-df-sub">synkroniserer</div>
+                </div>
+                <div class="docs-df-arrow">&#8594;</div>
+                <div class="docs-df-node df-green">
+                    <div class="docs-df-label">da-DK.xlf</div>
+                    <div class="docs-df-sub">oversat fil</div>
+                </div>
+            </div>
+
+            <div class="docs-callout">
+                <strong>Problemet uden v&aelig;rkt&oslash;jet:</strong> Hver gang du &aelig;ndrer en tekst i din AL-kode, skal alle sprogfiler
+                opdateres manuelt. Nye tekster skal tilf&oslash;jes, slettede fjernes, og &aelig;ndrede markeres til genovers&aelig;ttelse.
+                Med 15+ sprog og tusindvis af tekster er det en fejlbombe. NAB AL Tools g&oslash;r det hele automatisk med &eacute;n kommando.
+            </div>
+
+            <div class="docs-code-block">
+                <div class="docs-code-title">Eksempel: AL-kode med overs&aelig;ttelig tekst</div>
+                <pre><code><span class="ck">table</span> 50100 <span class="cs">"Customer Rating"</span>
+{
+    <span class="ck">fields</span>
+    {
+        <span class="ck">field</span>(1; <span class="cs">"Rating"</span>; <span class="ck">Integer</span>)
+        {
+            <span class="cf">Caption</span> = <span class="cs">'Customer Rating'</span>;
+            <span class="cc">// &#8593; Denne tekst ender i g.xlf og skal overs&aelig;ttes</span>
+        }
+    }
+}</code></pre>
+            </div>
+        </div>
+    }
+
+    @* ===== Section: Workflow ===== *@
+    @if (activeTab == "workflow")
+    {
+        <div class="docs-section">
+            <div class="docs-section-label">02 &mdash; Workflow</div>
+            <h2 class="docs-section-title">Fra kode til f&aelig;rdig overs&aelig;ttelse</h2>
+            <p class="docs-section-desc">
+                Hele overs&aelig;ttelsesprocessen f&oslash;lger et klart flow med definerede trin.
+            </p>
+
+            <div class="docs-flow">
+                <div class="docs-flow-step">
+                    <div class="docs-flow-num"><span>1</span></div>
+                    <div class="docs-flow-line"></div>
+                    <div class="docs-flow-body">
+                        <h4>Skriv AL-kode</h4>
+                        <p>Du udvikler tabeller, sider, rapporter og codeunits. Alle brugervendte tekster (Captions, ToolTips, Labels) markeres automatisk som overs&aelig;ttelige af compileren.</p>
+                        <div class="docs-tags">
+                            <span class="docs-tag tag-file">.al filer</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="docs-flow-step">
+                    <div class="docs-flow-num"><span>2</span></div>
+                    <div class="docs-flow-line"></div>
+                    <div class="docs-flow-body">
+                        <h4>Byg projektet</h4>
+                        <p>AL-compileren genererer <strong>g.xlf</strong> &mdash; en masterfil der indeholder alle overs&aelig;ttelige tekster med unikke ID'er og kontekstinformation.</p>
+                        <div class="docs-tags">
+                            <span class="docs-tag tag-file">g.xlf</span>
+                            <span class="docs-tag tag-cmd">Ctrl+Shift+B</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="docs-flow-step">
+                    <div class="docs-flow-num"><span>3</span></div>
+                    <div class="docs-flow-line"></div>
+                    <div class="docs-flow-body">
+                        <h4>Synkroniser sprogfiler</h4>
+                        <p><strong>NAB: Refresh XLF files from g.xlf</strong> &mdash; den vigtigste kommando. Sammenligner g.xlf med alle sprogfiler og tilf&oslash;jer nye tekster, fjerner slettede, og markerer &aelig;ndrede til genovers&aelig;ttelse.</p>
+                        <div class="docs-tags">
+                            <span class="docs-tag tag-cmd">Refresh XLF</span>
+                            <span class="docs-tag tag-file">da-DK.xlf</span>
+                            <span class="docs-tag tag-file">sv-SE.xlf</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="docs-flow-step">
+                    <div class="docs-flow-num"><span>4</span></div>
+                    <div class="docs-flow-line"></div>
+                    <div class="docs-flow-body">
+                        <h4>Overs&aelig;t</h4>
+                        <p>Nu kan du overs&aelig;tte p&aring; tre m&aring;der: <strong>Manuelt</strong> med "Find next untranslated text" (Ctrl+Alt+U), via <strong>AI-agenten</strong> der overs&aelig;tter autonomt, eller via <strong>CSV-eksport</strong> til eksterne overs&aelig;ttere.</p>
+                        <div class="docs-tags">
+                            <span class="docs-tag tag-cmd">Ctrl+Alt+U</span>
+                            <span class="docs-tag tag-ai">AI Agent</span>
+                            <span class="docs-tag tag-file">CSV</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="docs-flow-step">
+                    <div class="docs-flow-num"><span>5</span></div>
+                    <div class="docs-flow-line"></div>
+                    <div class="docs-flow-body">
+                        <h4>Match mod base-app</h4>
+                        <p>Microsoft har allerede oversat 15+ sprog til Business Centrals standardapp. NAB AL Tools kan automatisk matche dine tekster mod disse officielle overs&aelig;ttelser.</p>
+                        <div class="docs-tags">
+                            <span class="docs-tag tag-cmd">Match Base App</span>
+                            <span class="docs-tag tag-ai">Glossar</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="docs-flow-step">
+                    <div class="docs-flow-num"><span>6</span></div>
+                    <div class="docs-flow-line last"></div>
+                    <div class="docs-flow-body">
+                        <h4>Valid&eacute;r og godkend</h4>
+                        <p>S&aelig;t status p&aring; overs&aelig;ttelser og sikr kvaliteten. Find inkonsistenser med "Find multiple targets".</p>
+                        <div class="docs-tags">
+                            <span class="docs-tag tag-state">translated</span>
+                            <span class="docs-tag tag-state">signed-off</span>
+                            <span class="docs-tag tag-state">final</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @* ===== Section: Arkitektur ===== *@
+    @if (activeTab == "architecture")
+    {
+        <div class="docs-section">
+            <div class="docs-section-label">03 &mdash; Arkitektur</div>
+            <h2 class="docs-section-title">Hvordan det hele h&aelig;nger sammen</h2>
+            <p class="docs-section-desc">
+                NAB AL Tools er bygget i lag. Kernelogikken er delt mellem VS Code-udvidelsen, MCP-serveren og CLI-v&aelig;rkt&oslash;jerne
+                &mdash; s&aring; den samme gennemtestede kode driver alt.
+            </p>
+
+            @* Architecture Layers *@
+            <div class="docs-arch">
+                <div class="docs-arch-layer">
+                    <div class="docs-arch-label label-purple">Indgangspunkter &mdash; Tre veje ind</div>
+                    <div class="docs-arch-boxes">
+                        <div class="docs-arch-box">
+                            <h5>&#128268; VS Code Extension</h5>
+                            <p>100+ kommandoer, hover-overs&aelig;ttelser, Language Model Tools, webview-editorer. Kr&aelig;ver VS Code.</p>
+                        </div>
+                        <div class="docs-arch-box">
+                            <h5>&#129302; MCP Server</h5>
+                            <p>Model Context Protocol. Bruges af Claude Desktop, GitHub Copilot eller enhver MCP-klient. K&oslash;rer standalone.</p>
+                        </div>
+                        <div class="docs-arch-box">
+                            <h5>&#9000; CLI-v&aelig;rkt&oslash;jer</h5>
+                            <p>RefreshXLF og CreateDocumentation. Til CI/CD-pipelines og automatisering. Ingen UI n&oslash;dvendig.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="docs-arch-connector">
+                    <div class="docs-arch-arrow-line"></div>
+                    <span>&#9660; deler kode</span>
+                </div>
+
+                <div class="docs-arch-layer">
+                    <div class="docs-arch-label label-blue">Delt kerne &mdash; Den f&aelig;lles motor</div>
+                    <div class="docs-arch-boxes">
+                        <div class="docs-arch-box">
+                            <h5>XliffToolsCore.ts</h5>
+                            <p>F&aelig;lles implementation for alle AI-v&aelig;rkt&oslash;jer. Uafh&aelig;ngig af VS Code &mdash; kan bruges overalt.</p>
+                        </div>
+                        <div class="docs-arch-box">
+                            <h5>XliffFunctions.ts</h5>
+                            <p>1.400+ linjer kernelogik til XLIFF-manipulation: synkronisering, matching, validering.</p>
+                        </div>
+                        <div class="docs-arch-box">
+                            <h5>ALParser.ts</h5>
+                            <p>Recursive descent parser for AL-syntaks. Forst&aring;r tabeller, sider, codeunits og deres egenskaber.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="docs-arch-connector">
+                    <div class="docs-arch-arrow-line"></div>
+                    <span>&#9660; l&aelig;ser og skriver</span>
+                </div>
+
+                <div class="docs-arch-layer">
+                    <div class="docs-arch-label label-green">Data &mdash; Filerne p&aring; disken</div>
+                    <div class="docs-arch-boxes">
+                        <div class="docs-arch-box">
+                            <h5>*.al filer</h5>
+                            <p>Din AL-kildekode med Captions, ToolTips og Labels.</p>
+                        </div>
+                        <div class="docs-arch-box">
+                            <h5>g.xlf</h5>
+                            <p>Master-overs&aelig;ttelsesfilen. Genereret af AL-compileren. Sandhedskilden.</p>
+                        </div>
+                        <div class="docs-arch-box">
+                            <h5>{sprog}.xlf</h5>
+                            <p>Sprogspecifikke overs&aelig;ttelsesfiler: da-DK.xlf, sv-SE.xlf, de-DE.xlf osv.</p>
+                        </div>
+                        <div class="docs-arch-box">
+                            <h5>Glossar (TSV)</h5>
+                            <p>Projektspecifikke termer for konsistent terminologi.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="docs-callout" style="margin-top: 1.5rem;">
+                <strong>N&oslash;gleprincip:</strong> CLI-v&aelig;rkt&oslash;jer og MCP-serveren importerer <em>aldrig</em> VS Codes API.
+                De bruger kun Node.js native API'er. Det verificeres automatisk i CI/CD &mdash; s&aring; de altid kan k&oslash;re
+                selvst&aelig;ndigt uden VS Code.
+            </div>
+        </div>
+    }
+
+    @* ===== Section: AI ===== *@
+    @if (activeTab == "ai")
+    {
+        <div class="docs-section">
+            <div class="docs-section-label">04 &mdash; AI-integration</div>
+            <h2 class="docs-section-title">AI der faktisk forst&aring;r dine overs&aelig;ttelser</h2>
+            <p class="docs-section-desc">
+                NAB AL Tools eksponerer strukturerede v&aelig;rkt&oslash;jer som AI-modeller kan bruge. Det betyder at en AI-agent kan
+                l&aelig;se, overs&aelig;tte og gemme dine overs&aelig;ttelser &mdash; med fuld kontekst om hvert felt.
+            </p>
+
+            <h3 class="docs-h3">To veje til AI</h3>
+            <div class="docs-two-col">
+                <div class="docs-info-card">
+                    <div class="docs-info-icon accent-blue">&#128268;</div>
+                    <h4>VS Code Language Model API</h4>
+                    <p>V&aelig;rkt&oslash;jerne registreres direkte i VS Codes chat-interface (Copilot Chat). AI'en kan kalde dem som funktioner under en samtale.</p>
+                </div>
+                <div class="docs-info-card">
+                    <div class="docs-info-icon accent-purple">&#129302;</div>
+                    <h4>MCP Server (ekstern)</h4>
+                    <p>Samme v&aelig;rkt&oslash;jer eksponeres via Model Context Protocol. Bruges af Claude Desktop, GitHub Copilot Agent eller andre MCP-klienter.</p>
+                </div>
+            </div>
+
+            <h3 class="docs-h3">De 10 AI-v&aelig;rkt&oslash;jer</h3>
+            <div class="docs-tool-grid">
+                <div class="docs-tool-card">
+                    <div class="docs-tool-name">getTextsToTranslate</div>
+                    <p>Henter uoversatte tekster med paginering, kildesprog-kontekst, maxl&aelig;ngde og kommentarer.</p>
+                </div>
+                <div class="docs-tool-card">
+                    <div class="docs-tool-name">getTranslatedTextsMap</div>
+                    <p>Grupperer overs&aelig;ttelser efter kildetekst. Sikrer at "Customer" altid overs&aelig;ttes ens.</p>
+                </div>
+                <div class="docs-tool-card">
+                    <div class="docs-tool-name">saveTranslatedTexts</div>
+                    <p>Gemmer overs&aelig;ttelser og propagerer automatisk til alle steder med samme kildetekst.</p>
+                </div>
+                <div class="docs-tool-card">
+                    <div class="docs-tool-name">getGlossaryTerms</div>
+                    <p>Returnerer termpar fra BC-glossaret + eventuelt projektglossar for korrekt terminologi.</p>
+                </div>
+                <div class="docs-tool-card">
+                    <div class="docs-tool-name">getTextsByKeyword</div>
+                    <p>S&oslash;g i kilde- og m&aring;ltekster med regex og paginering.</p>
+                </div>
+                <div class="docs-tool-card">
+                    <div class="docs-tool-name">getTranslatedTextsByState</div>
+                    <p>Filtrer overs&aelig;ttelser efter status: needs-review, translated, final.</p>
+                </div>
+                <div class="docs-tool-card">
+                    <div class="docs-tool-name">refreshXlf</div>
+                    <p>Synkroniser XLF-filer &mdash; samme som kommandoen, men kaldt af AI.</p>
+                </div>
+                <div class="docs-tool-card">
+                    <div class="docs-tool-name">buildAlPackage</div>
+                    <p>Bygger AL-projektet og returnerer detaljerede kompileringsfejl med kontekst.</p>
+                </div>
+                <div class="docs-tool-card">
+                    <div class="docs-tool-name">createLanguageXlf</div>
+                    <p>Opretter ny sprogfil med valgfri matching mod Microsofts base-app.</p>
+                </div>
+                <div class="docs-tool-card">
+                    <div class="docs-tool-name">openFile</div>
+                    <p>&Aring;bner filer i VS Code og etablerer kontekst for de andre v&aelig;rkt&oslash;jer.</p>
+                </div>
+            </div>
+
+            <h3 class="docs-h3">AI-agentens tre tilstande</h3>
+            <div class="docs-modes">
+                <div class="docs-mode-item">
+                    <div class="docs-mode-icon accent-purple">&#9997;</div>
+                    <div>
+                        <strong>Overs&aelig;t-tilstand</strong>
+                        <p>AI'en henter uoversatte tekster batch-vis, overs&aelig;tter med glossar-kontekst, og gemmer automatisk. K&oslash;rer autonomt til alt er oversat.</p>
+                    </div>
+                </div>
+                <div class="docs-mode-item">
+                    <div class="docs-mode-icon accent-gold">&#128270;</div>
+                    <div>
+                        <strong>Review-tilstand</strong>
+                        <p>Gennemg&aring;r overs&aelig;ttelser der skal godkendes. Markerer som signed-off eller flagger problemer. Batch-baseret review.</p>
+                    </div>
+                </div>
+                <div class="docs-mode-item">
+                    <div class="docs-mode-icon accent-green">&#128214;</div>
+                    <div>
+                        <strong>Glossar-tilstand</strong>
+                        <p>Opretter og vedligeholder projektspecifikke glossarer i TSV-format for konsistent terminologi.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @* ===== Section: Det smarte ===== *@
+    @if (activeTab == "smart")
+    {
+        <div class="docs-section">
+            <div class="docs-section-label">05 &mdash; Hvorfor det er smart</div>
+            <h2 class="docs-section-title">De designvalg der g&oslash;r forskellen</h2>
+            <p class="docs-section-desc">
+                NAB AL Tools er ikke bare "endnu et overs&aelig;ttelsesv&aelig;rkt&oslash;j". Her er de arkitektoniske beslutninger
+                der g&oslash;r det til et gennemkt&aelig;nkt og kraftfuldt system.
+            </p>
+
+            <div class="docs-smart-grid">
+                <div class="docs-smart-card">
+                    <div class="docs-smart-num">01</div>
+                    <h4>Delt kerne, tre indgange</h4>
+                    <p>Den samme gennemtestede kode driver VS Code-udvidelsen, MCP-serveren og CLI-v&aelig;rkt&oslash;jerne. Fix en bug &eacute;t sted &mdash; den er fixet overalt.</p>
+                </div>
+                <div class="docs-smart-card">
+                    <div class="docs-smart-num">02</div>
+                    <h4>vscode-uafh&aelig;ngighed</h4>
+                    <p>CLI og MCP importerer aldrig VS Codes API. Det verificeres automatisk i CI. De kan k&oslash;re i Docker, i pipelines, p&aring; servere &mdash; overalt.</p>
+                </div>
+                <div class="docs-smart-card">
+                    <div class="docs-smart-num">03</div>
+                    <h4>AI som f&oslash;rsteklasses borger</h4>
+                    <p>AI-v&aelig;rkt&oslash;jerne er designet med paginering, kontekstrig metadata, og automatisk propagering. AI'en har al den information den beh&oslash;ver.</p>
+                </div>
+                <div class="docs-smart-card">
+                    <div class="docs-smart-num">04</div>
+                    <h4>Base-app matching</h4>
+                    <p>Microsoft har oversat tusindvis af termer til 15+ sprog. NAB AL Tools genbruger dem automatisk. Hvorfor overs&aelig;tte "Customer" manuelt?</p>
+                </div>
+                <div class="docs-smart-card">
+                    <div class="docs-smart-num">05</div>
+                    <h4>Status-workflow</h4>
+                    <p>XLIFF-standarden definerer status: needs-translation &#8594; translated &#8594; signed-off &#8594; final. Hele flowet er implementeret.</p>
+                </div>
+                <div class="docs-smart-card">
+                    <div class="docs-smart-num">06</div>
+                    <h4>Propagering</h4>
+                    <p>Overs&aelig;t "Amount" til "Bel&oslash;b" &eacute;n gang &mdash; og det opdateres automatisk alle steder med identisk kildetekst.</p>
+                </div>
+                <div class="docs-smart-card">
+                    <div class="docs-smart-num">07</div>
+                    <h4>Glossar-system</h4>
+                    <p>Kombinerer Microsofts officielle BC-glossar med projektspecifikke termer. AI-agenten bruger glossaret automatisk.</p>
+                </div>
+                <div class="docs-smart-card">
+                    <div class="docs-smart-num">08</div>
+                    <h4>CI/CD-klar</h4>
+                    <p>RefreshXLF CLI kan validere overs&aelig;ttelsesfiler som del af din build-pipeline. <code>--fail-changed</code> stopper bygget hvis noget mangler.</p>
+                </div>
+                <div class="docs-smart-card">
+                    <div class="docs-smart-num">09</div>
+                    <h4>MCP = universel AI-adgang</h4>
+                    <p>MCP er en &aring;ben standard. Claude, Copilot og fremtidige AI-v&aelig;rkt&oslash;jer kan alle bruge NAB AL Tools &mdash; uden &aelig;ndringer.</p>
+                </div>
+            </div>
+
+            @* Summary dataflow *@
+            <div class="docs-summary-flow">
+                <div class="docs-df-node df-blue">
+                    <div class="docs-df-label">Udvikler</div>
+                </div>
+                <div class="docs-df-arrow">&#8594;</div>
+                <div class="docs-df-node df-purple">
+                    <div class="docs-df-label">NAB AL Tools</div>
+                </div>
+                <div class="docs-df-arrow">&#8594;</div>
+                <div class="docs-df-node df-gold">
+                    <div class="docs-df-label">+ AI</div>
+                </div>
+                <div class="docs-df-arrow">&#8594;</div>
+                <div class="docs-df-node df-green">
+                    <div class="docs-df-label">F&aelig;rdige overs&aelig;ttelser</div>
+                </div>
+            </div>
+        </div>
+    }
+
+</div>
+
+@code {
+    private string activeTab = "overview";
+
+    private record TabDef(string Id, string Label, string Icon);
+
+    private readonly TabDef[] tabs =
+    [
+        new("overview", "Oversigt", "\U0001f3e0"),
+        new("workflow", "Workflow", "\U0001f504"),
+        new("architecture", "Arkitektur", "\U0001f3d7\ufe0f"),
+        new("ai", "AI-integration", "\U0001f916"),
+        new("smart", "Det smarte", "\U0001f4a1"),
+    ];
+}

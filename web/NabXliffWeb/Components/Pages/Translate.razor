@@ -19,7 +19,10 @@
 
 @if (string.IsNullOrEmpty(Session.XlfFilePath))
 {
-    <div class="alert alert-info">Please select a translation file on the Setup page first.</div>
+    <div class="empty-state">
+        <p>No translation file selected.</p>
+        <a class="btn btn-primary" href="/">Go to Setup</a>
+    </div>
 }
 else
 {
@@ -108,7 +111,7 @@ else
                         {
                             <input type="text" class="form-control form-control-sm"
                                    placeholder="Enter translation..."
-                                   @onfocusout="e => OnManualTranslation(text.Id, e)"
+                                   @onkeydown="@(e => OnManualKeyDown(e, text.Id))"
                                    @bind="manualInputs[text.Id]" />
                         }
                     </div>
@@ -307,11 +310,9 @@ else
         await SaveSingleAsync(id, value);
     }
 
-    private async Task OnManualTranslation(string id, FocusEventArgs e)
+    private async Task OnManualKeyDown(KeyboardEventArgs e, string id)
     {
-        // Auto-save on focus out if there's a value
-        var value = manualInputs.GetValueOrDefault(id);
-        if (!string.IsNullOrEmpty(value))
+        if (e.Key == "Enter")
         {
             await SaveManualAsync(id);
         }
