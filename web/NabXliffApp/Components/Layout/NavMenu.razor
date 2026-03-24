@@ -1,0 +1,112 @@
+@inject McpBridgeService McpBridge
+@inject SessionStateService Session
+@implements IDisposable
+
+<div class="nav-sidebar">
+    <div class="nav-brand">
+        <span class="brand-icon">T</span>
+        <span class="brand-text">NAB XLIFF</span>
+    </div>
+
+    <nav class="nav-menu">
+        <NavLink class="nav-item" href="" Match="NavLinkMatch.All">
+            <span class="nav-icon">&#9881;</span>
+            <span>Setup</span>
+        </NavLink>
+
+        @if (McpBridge.IsInitialized)
+        {
+            <NavLink class="nav-item" href="chat">
+                <span class="nav-icon">&#128172;</span>
+                <span>Chat</span>
+            </NavLink>
+
+            <NavLink class="nav-item" href="translate">
+                <span class="nav-icon">&#9998;</span>
+                <span>Translate</span>
+            </NavLink>
+
+            <NavLink class="nav-item" href="review">
+                <span class="nav-icon">&#10003;</span>
+                <span>Review</span>
+            </NavLink>
+
+            <NavLink class="nav-item" href="search">
+                <span class="nav-icon">&#128269;</span>
+                <span>Search</span>
+            </NavLink>
+
+            <NavLink class="nav-item" href="glossary">
+                <span class="nav-icon">&#128218;</span>
+                <span>Glossary</span>
+            </NavLink>
+        }
+        else
+        {
+            <span class="nav-item disabled">
+                <span class="nav-icon">&#128172;</span>
+                <span>Chat</span>
+            </span>
+            <span class="nav-item disabled">
+                <span class="nav-icon">&#9998;</span>
+                <span>Translate</span>
+            </span>
+            <span class="nav-item disabled">
+                <span class="nav-icon">&#10003;</span>
+                <span>Review</span>
+            </span>
+            <span class="nav-item disabled">
+                <span class="nav-icon">&#128269;</span>
+                <span>Search</span>
+            </span>
+            <span class="nav-item disabled">
+                <span class="nav-icon">&#128218;</span>
+                <span>Glossary</span>
+            </span>
+        }
+
+        <NavLink class="nav-item" href="settings">
+            <span class="nav-icon">&#9881;</span>
+            <span>Settings</span>
+        </NavLink>
+
+        <div class="nav-divider"></div>
+
+        <NavLink class="nav-item" href="docs">
+            <span class="nav-icon">&#128214;</span>
+            <span>Docs</span>
+        </NavLink>
+    </nav>
+
+    <div class="nav-footer">
+        @if (McpBridge.IsInitialized)
+        {
+            <div class="status-badge connected">Connected</div>
+            @if (!string.IsNullOrEmpty(Session.TargetLanguage))
+            {
+                <div class="status-lang">@Session.TargetLanguage</div>
+            }
+        }
+        else
+        {
+            <div class="status-badge disconnected">Not connected</div>
+        }
+    </div>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        McpBridge.OnStateChanged += HandleStateChanged;
+    }
+
+    private void HandleStateChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        McpBridge.OnStateChanged -= HandleStateChanged;
+    }
+}

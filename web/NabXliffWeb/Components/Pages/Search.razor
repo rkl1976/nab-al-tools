@@ -1,0 +1,217 @@
+@page "/search"
+@inject McpBridgeService McpBridge
+@inject SessionStateService Session
+@rendermode InteractiveServer
+
+<PageTitle>Search - NAB XLIFF</PageTitle>
+
+<div class="page-header">
+    <h1>Search Translations</h1>
+    <p class="subtitle">Search by keyword or regex in source or target texts</p>
+</div>
+
+@if (string.IsNullOrEmpty(Session.XlfFilePath))
+{
+    <div class="empty-state">
+        <p>No translation file selected.</p>
+        <a class="btn btn-primary" href="/">Go to Setup</a>
+    </div>
+}
+else
+{
+    <div class="search-bar">
+        <input type="text" class="form-control" placeholder="Search keyword or regex..."
+               @bind="keyword" @onkeydown="OnSearchKeyDown" />
+        <div class="search-options">
+            <label class="checkbox-label">
+                <input type="checkbox" @bind="searchInTarget" /> Search in target
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" @bind="caseSensitive" /> Case sensitive
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" @bind="isRegex" /> Regex
+            </label>
+        </div>
+        <button class="btn btn-primary" @onclick="SearchAsync" disabled="@(isLoading || string.IsNullOrWhiteSpace(keyword))">
+            Search
+        </button>
+    </div>
+
+    @if (!string.IsNullOrEmpty(statusMessage))
+    {
+        <div class="alert @(isError ? "alert-error" : "alert-info")">@statusMessage</div>
+    }
+
+    @if (isLoading)
+    {
+        <div class="loading-container">
+            <span class="spinner"></span>
+            <span>Searching...</span>
+        </div>
+    }
+    else if (hasSearched && results.Count == 0)
+    {
+        <div class="empty-state">
+            <p>No results found for "@keyword".</p>
+        </div>
+    }
+    else if (results.Count > 0)
+    {
+        <div class="translation-table">
+            <div class="table-header">
+                <div class="col-source">Source</div>
+                <div class="col-target">Translation</div>
+                <div class="col-state">State</div>
+                <div class="col-context">Context</div>
+                <div class="col-actions">Actions</div>
+            </div>
+            @foreach (var t in results)
+            {
+                <div class="table-row">
+                    <div class="col-source">
+                        <span class="source-text">@t.SourceText</span>
+                    </div>
+                    <div class="col-target">
+                        @if (editingId == t.Id)
+                        {
+                            <input type="text" class="form-control form-control-sm" @bind="editValue"
+                                   @onkeydown="e => OnEditKeyDown(e, t.Id)" />
+                        }
+                        else
+                        {
+                            <span class="target-text" @ondblclick="() => StartEdit(t)">
+                                @(string.IsNullOrEmpty(t.TargetText) ? "(untranslated)" : t.TargetText)
+                            </span>
+                        }
+                    </div>
+                    <div class="col-state">
+                        <span class="state-badge state-@(t.TranslationState ?? "unknown")">
+                            @(t.TranslationState ?? (string.IsNullOrEmpty(t.TargetText) ? "untranslated" : "translated"))
+                        </span>
+                    </div>
+                    <div class="col-context">
+                        <span class="context-text" title="@t.Context">@TruncateContext(t.Context)</span>
+                    </div>
+                    <div class="col-actions">
+                        @if (editingId == t.Id)
+                        {
+                            <button class="btn-icon btn-accept" @onclick="() => SaveEditAsync(t.Id)">&#10003;</button>
+                            <button class="btn-icon btn-reject" @onclick="CancelEdit">&#10007;</button>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="pagination-bar">
+            <button class="btn btn-secondary btn-sm" disabled="@(pageOffset == 0)" @onclick="PreviousPage">
+                Previous
+            </button>
+            <span class="page-info">Page @(pageOffset / pageSize + 1)</span>
+            <button class="btn btn-secondary btn-sm" disabled="@(results.Count < pageSize)" @onclick="NextPage">
+                Next
+            </button>
+        </div>
+    }
+}
+
+@code {
+    private string keyword = "";
+    private bool searchInTarget;
+    private bool caseSensitive;
+    private bool isRegex;
+    private bool isLoading;
+    private bool isError;
+    private bool hasSearched;
+    private string? statusMessage;
+    private List<TranslatedTextWithState> results = [];
+    private string? editingId;
+    private string editValue = "";
+    private int pageOffset;
+    private int pageSize = 50;
+
+    private async Task OnSearchKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(keyword))
+            await SearchAsync();
+    }
+
+    private async Task SearchAsync()
+    {
+        if (string.IsNullOrEmpty(Session.XlfFilePath) || string.IsNullOrWhiteSpace(keyword)) return;
+        isLoading = true;
+        statusMessage = null;
+        isError = false;
+
+        try
+        {
+            results = await McpBridge.GetTextsByKeywordAsync(
+                Session.XlfFilePath, keyword, pageOffset, pageSize,
+                searchInTarget, caseSensitive, isRegex);
+            hasSearched = true;
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+            isError = true;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void StartEdit(TranslatedTextWithState t)
+    {
+        editingId = t.Id;
+        editValue = t.TargetText;
+    }
+
+    private void CancelEdit()
+    {
+        editingId = null;
+    }
+
+    private async Task OnEditKeyDown(KeyboardEventArgs e, string id)
+    {
+        if (e.Key == "Enter") await SaveEditAsync(id);
+        else if (e.Key == "Escape") CancelEdit();
+    }
+
+    private async Task SaveEditAsync(string id)
+    {
+        if (string.IsNullOrEmpty(Session.XlfFilePath)) return;
+        try
+        {
+            await McpBridge.SaveTranslatedTextsAsync(Session.XlfFilePath,
+                [new TranslationToSave(id, editValue, "translated")]);
+            editingId = null;
+            await SearchAsync();
+            statusMessage = "Translation saved.";
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+            isError = true;
+        }
+    }
+
+    private async Task PreviousPage()
+    {
+        pageOffset = Math.Max(0, pageOffset - pageSize);
+        await SearchAsync();
+    }
+
+    private async Task NextPage()
+    {
+        pageOffset += pageSize;
+        await SearchAsync();
+    }
+
+    private static string TruncateContext(string context)
+    {
+        if (string.IsNullOrEmpty(context)) return "";
+        return context.Length > 60 ? context[..57] + "..." : context;
+    }
+}

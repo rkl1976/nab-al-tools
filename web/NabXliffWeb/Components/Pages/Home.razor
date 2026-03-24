@@ -1,0 +1,422 @@
+@page "/"
+@inject McpBridgeService McpBridge
+@inject SessionStateService Session
+@inject NavigationManager Navigation
+@inject ILogger<Home> Logger
+@rendermode InteractiveServer
+
+<PageTitle>Setup - NAB XLIFF</PageTitle>
+
+<div class="setup-wizard">
+    @* ===== Step 1: Project Path ===== *@
+    <div class="wizard-step @(currentStep >= 1 ? "active" : "") @(currentStep > 1 ? "completed" : "")">
+        <div class="step-header">
+            <span class="step-number">@(currentStep > 1 ? "\u2713" : "1")</span>
+            <div>
+                <h2>Connect to AL Project</h2>
+                <p class="subtitle">Enter the path to your AL app folder containing app.json</p>
+            </div>
+        </div>
+
+        @if (currentStep == 1)
+        {
+            <div class="step-content">
+                <div class="form-section">
+                    <label class="form-label">AL App Folder Path</label>
+                    <input type="text" class="form-control" @bind="appFolderPath"
+                           placeholder="C:\path\to\your\al-app" disabled="@isLoading" />
+                </div>
+
+                <div class="form-section">
+                    <label class="form-label">Workspace File (optional)</label>
+                    <input type="text" class="form-control" @bind="workspaceFilePath"
+                           placeholder="C:\path\to\workspace.code-workspace" disabled="@isLoading" />
+                    <small class="form-hint">For additional translation settings from .code-workspace</small>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn btn-primary btn-lg" @onclick="InitializeAsync"
+                            disabled="@(isLoading || string.IsNullOrWhiteSpace(appFolderPath))">
+                        @if (isLoading)
+                        {
+                            <span class="spinner"></span>
+                            <span>Connecting...</span>
+                        }
+                        else
+                        {
+                            <span>Connect</span>
+                        }
+                    </button>
+                </div>
+
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="alert alert-error">@errorMessage</div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="step-summary" @onclick="() => GoToStep(1)">
+                <span class="summary-text">@appFolderPath</span>
+                <span class="step-edit">Change</span>
+            </div>
+        }
+    </div>
+
+    @* ===== Step 2: Select XLF File ===== *@
+    <div class="wizard-step @(currentStep >= 2 ? "active" : "") @(currentStep > 2 ? "completed" : "")">
+        <div class="step-header">
+            <span class="step-number">@(currentStep > 2 ? "\u2713" : "2")</span>
+            <div>
+                <h2>Select Translation File</h2>
+                <p class="subtitle">Choose which language file to work with</p>
+            </div>
+        </div>
+
+        @if (currentStep == 2)
+        {
+            <div class="step-content">
+                @if (xlfFiles.Count > 0)
+                {
+                    <div class="xlf-file-list">
+                        @foreach (var file in xlfFiles)
+                        {
+                            <div class="xlf-file-item @(Session.XlfFilePath == file ? "active" : "")"
+                                 @onclick="() => SelectXlfFileAndContinue(file)">
+                                <span class="file-icon">&#128196;</span>
+                                <div class="file-info">
+                                    <span class="file-name">@System.IO.Path.GetFileName(file)</span>
+                                    <span class="file-path">@ExtractLanguage(file)</span>
+                                </div>
+                                @if (Session.XlfFilePath == file)
+                                {
+                                    <span class="check-icon">&#10003;</span>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info">No translation files (.xlf) found in the Translations folder. Create one below.</div>
+                }
+
+                @* ── Create New Language ── *@
+                <div class="create-language-section">
+                    <button class="btn btn-outline btn-sm" @onclick="() => showCreateLanguage = !showCreateLanguage">
+                        @(showCreateLanguage ? "Cancel" : "+ Add New Language")
+                    </button>
+
+                    @if (showCreateLanguage)
+                    {
+                        <div class="create-language-form">
+                            <div class="form-section">
+                                <label class="form-label">Language Code</label>
+                                <div class="language-picker">
+                                    <select class="form-control" @bind="newLanguageCode" disabled="@isCreatingLanguage">
+                                        <option value="">Select language...</option>
+                                        @foreach (var lang in availableLanguages)
+                                        {
+                                            <option value="@lang.Code">@lang.Name (@lang.Code)</option>
+                                        }
+                                    </select>
+                                </div>
+                                <small class="form-hint">Or type a custom code (e.g. pt-BR, zh-CN)</small>
+                                <input type="text" class="form-control form-control-sm" style="margin-top: 0.35rem; max-width: 200px;"
+                                       @bind="newLanguageCode" placeholder="Custom code..."
+                                       disabled="@isCreatingLanguage" />
+                            </div>
+
+                            <div class="form-section">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" @bind="matchBaseApp" disabled="@isCreatingLanguage" />
+                                    Match translations from Microsoft Base App
+                                </label>
+                                <small class="form-hint">
+                                    Pre-populates translations using Microsoft's official Business Central translations.
+                                    Requires internet connection.
+                                </small>
+                            </div>
+
+                            <div class="form-actions">
+                                <button class="btn btn-primary" @onclick="CreateLanguageAsync"
+                                        disabled="@(isCreatingLanguage || string.IsNullOrWhiteSpace(newLanguageCode))">
+                                    @if (isCreatingLanguage)
+                                    {
+                                        <span class="spinner"></span>
+                                        <span>Creating...</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Create Language File</span>
+                                    }
+                                </button>
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(createLanguageMessage))
+                            {
+                                <div class="alert @(createLanguageError ? "alert-error" : "alert-success")">
+                                    @createLanguageMessage
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+        else if (currentStep > 2)
+        {
+            <div class="step-summary" @onclick="() => GoToStep(2)">
+                <span class="summary-text">@System.IO.Path.GetFileName(Session.XlfFilePath) (@Session.TargetLanguage)</span>
+                <span class="step-edit">Change</span>
+            </div>
+        }
+    </div>
+
+    @* ===== Step 3: Ready ===== *@
+    <div class="wizard-step @(currentStep >= 3 ? "active" : "")">
+        <div class="step-header">
+            <span class="step-number">@(currentStep >= 3 ? "\u2713" : "3")</span>
+            <div>
+                <h2>Ready to Go</h2>
+                <p class="subtitle">Start translating your texts</p>
+            </div>
+        </div>
+
+        @if (currentStep == 3)
+        {
+            <div class="step-content">
+                <div class="ready-actions">
+                    <button class="btn btn-primary btn-lg" @onclick="GoToChat">
+                        Open Chat
+                    </button>
+                    <button class="btn btn-secondary btn-lg" @onclick="GoToTranslate">
+                        Manual Translation
+                    </button>
+                </div>
+                <p class="ready-hint">
+                    Your settings are saved and will be remembered next time.
+                </p>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private string appFolderPath = "";
+    private string? workspaceFilePath;
+    private bool isLoading;
+    private string? errorMessage;
+    private List<string> xlfFiles = [];
+    private int currentStep = 1;
+
+    // Create language state
+    private bool showCreateLanguage;
+    private string newLanguageCode = "";
+    private bool matchBaseApp;
+    private bool isCreatingLanguage;
+    private string? createLanguageMessage;
+    private bool createLanguageError;
+
+    private record LanguageOption(string Code, string Name);
+    private static readonly LanguageOption[] availableLanguages =
+    [
+        new("da-DK", "Danish"),
+        new("de-DE", "German"),
+        new("es-ES", "Spanish"),
+        new("fi-FI", "Finnish"),
+        new("fr-FR", "French"),
+        new("is-IS", "Icelandic"),
+        new("it-IT", "Italian"),
+        new("nb-NO", "Norwegian Bokm\u00e5l"),
+        new("nl-NL", "Dutch"),
+        new("sv-SE", "Swedish"),
+        new("pl-PL", "Polish"),
+        new("pt-BR", "Portuguese (Brazil)"),
+        new("cs-CZ", "Czech"),
+        new("hu-HU", "Hungarian"),
+        new("ro-RO", "Romanian"),
+        new("bg-BG", "Bulgarian"),
+        new("hr-HR", "Croatian"),
+        new("sl-SI", "Slovenian"),
+        new("et-EE", "Estonian"),
+        new("lv-LV", "Latvian"),
+        new("lt-LT", "Lithuanian"),
+    ];
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        // Auto-initialize from saved config
+        if (!string.IsNullOrEmpty(Session.AppFolderPath) && !McpBridge.IsInitialized)
+        {
+            appFolderPath = Session.AppFolderPath;
+            workspaceFilePath = Session.WorkspaceFilePath;
+            StateHasChanged();
+
+            Logger.LogInformation("[Home] Auto-initializing from saved config: {Path}", appFolderPath);
+            await InitializeAsync();
+
+            // If we also have a saved XLF file, select it and go straight to ready
+            if (McpBridge.IsInitialized && !string.IsNullOrEmpty(Session.XlfFilePath) && xlfFiles.Contains(Session.XlfFilePath))
+            {
+                SelectXlfFile(Session.XlfFilePath);
+                currentStep = 3;
+                StateHasChanged();
+
+                // Auto-redirect to chat for return users
+                Logger.LogInformation("[Home] Auto-redirect to /chat for return user");
+                Navigation.NavigateTo("/chat");
+            }
+
+            // done
+        }
+        else if (!string.IsNullOrEmpty(Session.AppFolderPath))
+        {
+            appFolderPath = Session.AppFolderPath;
+            workspaceFilePath = Session.WorkspaceFilePath;
+            StateHasChanged();
+        }
+    }
+
+    private async Task InitializeAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            await McpBridge.InitializeAsync(appFolderPath, workspaceFilePath);
+            Session.AppFolderPath = appFolderPath;
+            Session.WorkspaceFilePath = workspaceFilePath;
+
+            // Find XLF files
+            var translationsFolder = System.IO.Path.Combine(appFolderPath, "Translations");
+            if (System.IO.Directory.Exists(translationsFolder))
+            {
+                xlfFiles = System.IO.Directory.GetFiles(translationsFolder, "*.xlf")
+                    .Where(f => !f.EndsWith(".g.xlf", StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(f => f)
+                    .ToList();
+                Session.AvailableXlfFiles = xlfFiles;
+            }
+
+            if (xlfFiles.Count == 1)
+            {
+                // Auto-select single file and skip to step 3
+                SelectXlfFile(xlfFiles[0]);
+                Session.SaveConfig();
+                currentStep = 3;
+            }
+            else
+            {
+                currentStep = 2;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+            Logger.LogError(ex, "[Home] Initialize failed");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void SelectXlfFileAndContinue(string filePath)
+    {
+        SelectXlfFile(filePath);
+        Session.SaveConfig();
+        currentStep = 3;
+    }
+
+    private void SelectXlfFile(string filePath)
+    {
+        Session.XlfFilePath = filePath;
+        var fileName = System.IO.Path.GetFileNameWithoutExtension(filePath);
+        var parts = fileName.Split('.');
+        if (parts.Length >= 2)
+        {
+            Session.TargetLanguage = parts[^1];
+        }
+    }
+
+    private void GoToStep(int step)
+    {
+        currentStep = step;
+    }
+
+    private async Task CreateLanguageAsync()
+    {
+        if (string.IsNullOrWhiteSpace(newLanguageCode)) return;
+
+        isCreatingLanguage = true;
+        createLanguageMessage = null;
+        createLanguageError = false;
+        StateHasChanged();
+
+        try
+        {
+            var result = await McpBridge.CreateLanguageXlfAsync(
+                newLanguageCode.Trim(), matchBaseApp);
+
+            // Refresh the file list
+            var translationsFolder = System.IO.Path.Combine(appFolderPath, "Translations");
+            if (System.IO.Directory.Exists(translationsFolder))
+            {
+                xlfFiles = System.IO.Directory.GetFiles(translationsFolder, "*.xlf")
+                    .Where(f => !f.EndsWith(".g.xlf", StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(f => f)
+                    .ToList();
+                Session.AvailableXlfFiles = xlfFiles;
+            }
+
+            var matchInfo = result.NumberOfMatches > 0
+                ? $" {result.NumberOfMatches} translations matched from Base App."
+                : "";
+            createLanguageMessage = $"Created {System.IO.Path.GetFileName(result.TargetXlfFilepath)}.{matchInfo}";
+            createLanguageError = false;
+
+            // Auto-select the new file
+            SelectXlfFile(result.TargetXlfFilepath);
+            showCreateLanguage = false;
+            newLanguageCode = "";
+
+            Logger.LogInformation("[Home] Created language file: {Path} with {Matches} matches",
+                result.TargetXlfFilepath, result.NumberOfMatches);
+        }
+        catch (Exception ex)
+        {
+            createLanguageMessage = ex.Message;
+            createLanguageError = true;
+            Logger.LogError(ex, "[Home] Failed to create language file for {Lang}", newLanguageCode);
+        }
+        finally
+        {
+            isCreatingLanguage = false;
+            StateHasChanged();
+        }
+    }
+
+    private void GoToChat()
+    {
+        Navigation.NavigateTo("/chat");
+    }
+
+    private void GoToTranslate()
+    {
+        Navigation.NavigateTo("/translate");
+    }
+
+    private static string ExtractLanguage(string filePath)
+    {
+        var fileName = System.IO.Path.GetFileNameWithoutExtension(filePath);
+        var parts = fileName.Split('.');
+        return parts.Length >= 2 ? parts[^1] : "unknown";
+    }
+}

@@ -1,0 +1,270 @@
+@page "/review"
+@inject McpBridgeService McpBridge
+@inject SessionStateService Session
+
+<PageTitle>Review - NAB XLIFF</PageTitle>
+
+<div class="page-header">
+    <h1>Review Translations</h1>
+    <p class="subtitle">Filter and review translations by state</p>
+</div>
+
+@if (string.IsNullOrEmpty(Session.XlfFilePath))
+{
+    <div class="empty-state">
+        <p>No translation file selected.</p>
+        <a class="btn btn-primary" href="/">Go to Setup</a>
+    </div>
+}
+else
+{
+    <div class="toolbar">
+        <div class="toolbar-left">
+            <div class="state-filter-bar">
+                @foreach (var state in stateOptions)
+                {
+                    <button class="btn btn-filter @(currentFilter == state.Value ? "active" : "")"
+                            @onclick="() => FilterByState(state.Value)">
+                        @state.Label
+                    </button>
+                }
+            </div>
+        </div>
+        <div class="toolbar-right">
+            <span class="result-count">@translations.Count results</span>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(statusMessage))
+    {
+        <div class="alert @(isError ? "alert-error" : "alert-success")">@statusMessage</div>
+    }
+
+    @if (isLoading)
+    {
+        <div class="loading-container">
+            <span class="spinner"></span>
+            <span>Loading...</span>
+        </div>
+    }
+    else if (translations.Count == 0)
+    {
+        <div class="empty-state">
+            <p>No translations found with the selected filter.</p>
+        </div>
+    }
+    else
+    {
+        <div class="translation-table">
+            <div class="table-header">
+                <div class="col-source">Source</div>
+                <div class="col-target">Translation</div>
+                <div class="col-state">State</div>
+                <div class="col-context">Context</div>
+                <div class="col-actions">Actions</div>
+            </div>
+            @foreach (var t in translations)
+            {
+                <div class="table-row">
+                    <div class="col-source">
+                        <span class="source-text">@t.SourceText</span>
+                        @if (!string.IsNullOrEmpty(t.ReviewReason))
+                        {
+                            <span class="review-reason">@t.ReviewReason</span>
+                        }
+                    </div>
+                    <div class="col-target">
+                        @if (editingId == t.Id)
+                        {
+                            <input type="text" class="form-control form-control-sm" @bind="editValue"
+                                   @onkeydown="e => OnEditKeyDown(e, t.Id)" />
+                        }
+                        else
+                        {
+                            <span class="target-text" @ondblclick="() => StartEdit(t)">@t.TargetText</span>
+                        }
+                        @if (t.AlternativeTranslations is { Length: > 0 })
+                        {
+                            <div class="alternatives">
+                                @foreach (var alt in t.AlternativeTranslations)
+                                {
+                                    <span class="alt-badge" @onclick="() => UseAlternative(t.Id, alt)">@alt</span>
+                                }
+                            </div>
+                        }
+                    </div>
+                    <div class="col-state">
+                        <span class="state-badge state-@(t.TranslationState ?? "unknown")">
+                            @(t.TranslationState ?? "translated")
+                        </span>
+                    </div>
+                    <div class="col-context">
+                        <span class="context-text" title="@t.Context">@TruncateContext(t.Context)</span>
+                    </div>
+                    <div class="col-actions">
+                        @if (editingId == t.Id)
+                        {
+                            <button class="btn-icon btn-accept" @onclick="() => SaveEditAsync(t.Id)">&#10003;</button>
+                            <button class="btn-icon btn-reject" @onclick="CancelEdit">&#10007;</button>
+                        }
+                        else
+                        {
+                            <button class="btn-icon" title="Approve" @onclick="@(() => SetStateAsync(t.Id, t.TargetText, StateSignedOff))">&#10003;</button>
+                            <button class="btn-icon" title="Needs review" @onclick="@(() => SetStateAsync(t.Id, t.TargetText, StateNeedsReview))">&#8635;</button>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="pagination-bar">
+            <button class="btn btn-secondary btn-sm" disabled="@(pageOffset == 0)" @onclick="PreviousPage">
+                Previous
+            </button>
+            <span class="page-info">Page @(pageOffset / pageSize + 1)</span>
+            <button class="btn btn-secondary btn-sm" disabled="@(translations.Count < pageSize)" @onclick="NextPage">
+                Next
+            </button>
+        </div>
+    }
+}
+
+@code {
+    private List<TranslatedTextWithState> translations = [];
+    private string? currentFilter;
+    private bool isLoading;
+    private bool isError;
+    private string? statusMessage;
+    private string? editingId;
+    private string editValue = "";
+    private int pageOffset;
+    private int pageSize = 50;
+
+    private const string StateSignedOff = "signed-off";
+    private const string StateNeedsReview = "needs-review-translation";
+
+    private readonly (string Label, string? Value)[] stateOptions =
+    [
+        ("All", null),
+        ("Needs Review", "needs-review"),
+        ("Translated", "translated"),
+        ("Final", "final"),
+        ("Signed Off", "signed-off")
+    ];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(Session.XlfFilePath))
+        {
+            await LoadAsync();
+        }
+    }
+
+    private async Task FilterByState(string? state)
+    {
+        currentFilter = state;
+        pageOffset = 0;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        if (string.IsNullOrEmpty(Session.XlfFilePath)) return;
+        isLoading = true;
+        statusMessage = null;
+        isError = false;
+
+        try
+        {
+            translations = await McpBridge.GetTranslatedTextsByStateAsync(
+                Session.XlfFilePath, pageOffset, pageSize, currentFilter);
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+            isError = true;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void StartEdit(TranslatedTextWithState t)
+    {
+        editingId = t.Id;
+        editValue = t.TargetText;
+    }
+
+    private void CancelEdit()
+    {
+        editingId = null;
+        editValue = "";
+    }
+
+    private async Task OnEditKeyDown(KeyboardEventArgs e, string id)
+    {
+        if (e.Key == "Enter") await SaveEditAsync(id);
+        else if (e.Key == "Escape") CancelEdit();
+    }
+
+    private async Task SaveEditAsync(string id)
+    {
+        if (string.IsNullOrEmpty(Session.XlfFilePath)) return;
+        try
+        {
+            await McpBridge.SaveTranslatedTextsAsync(Session.XlfFilePath,
+                [new TranslationToSave(id, editValue, "translated")]);
+            editingId = null;
+            await LoadAsync();
+            statusMessage = "Translation updated.";
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+            isError = true;
+        }
+    }
+
+    private async Task SetStateAsync(string id, string targetText, string state)
+    {
+        if (string.IsNullOrEmpty(Session.XlfFilePath)) return;
+        try
+        {
+            await McpBridge.SaveTranslatedTextsAsync(Session.XlfFilePath,
+                [new TranslationToSave(id, targetText, state)]);
+            await LoadAsync();
+            statusMessage = $"State updated to {state}.";
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+            isError = true;
+        }
+    }
+
+    private async Task UseAlternative(string id, string altText)
+    {
+        editingId = id;
+        editValue = altText;
+        await SaveEditAsync(id);
+    }
+
+    private async Task PreviousPage()
+    {
+        pageOffset = Math.Max(0, pageOffset - pageSize);
+        await LoadAsync();
+    }
+
+    private async Task NextPage()
+    {
+        pageOffset += pageSize;
+        await LoadAsync();
+    }
+
+    private static string TruncateContext(string context)
+    {
+        if (string.IsNullOrEmpty(context)) return "";
+        return context.Length > 60 ? context[..57] + "..." : context;
+    }
+}

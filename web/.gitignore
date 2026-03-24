@@ -1,0 +1,81 @@
+## .NET / C# / Blazor / ASP.NET .gitignore
+
+# Build output
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# NuGet packages
+*.nupkg
+*.snupkg
+**/packages/
+!**/packages/build/
+.nuget/
+nuget.config.local
+
+# Publish output
+[Pp]ublish/
+[Pp]ublishProfiles/
+PublishScripts/
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# User-specific files
+*.rsuser
+*.cache
+*.pidb
+*.svd
+*.pdb
+*.ilk
+*.meta
+*.metaproj
+*.metaproj.tmp
+
+# Test results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.trx
+*.coverage
+*.coveragexml
+coverage*/
+TestResults/
+
+# dotnet tools
+.dotnet-tools/
+.config/dotnet-tools.json.local
+
+# Secrets / certificates
+*.pfx
+*.p12
+secrets.json
+appsettings.Production.json
+
+# Blazor WASM standalone publish
+wwwroot/_framework/
+wwwroot/appsettings.*.json
+
+# Temp / crash dumps
+*.tmp
+*.temp
+*.bak
+*.dmp
+crash*.log
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini

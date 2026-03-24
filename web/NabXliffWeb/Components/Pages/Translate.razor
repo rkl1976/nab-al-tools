@@ -1,0 +1,338 @@
+@page "/translate"
+@inject McpBridgeService McpBridge
+@inject SessionStateService Session
+@inject TranslationAgentService AgentService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Translate - NAB XLIFF</PageTitle>
+
+<div class="page-header">
+    <h1>Translate</h1>
+    <p class="subtitle">
+        @if (!string.IsNullOrEmpty(Session.XlfFilePath))
+        {
+            <span>@System.IO.Path.GetFileName(Session.XlfFilePath) &mdash; @totalCount untranslated texts</span>
+        }
+    </p>
+</div>
+
+@if (string.IsNullOrEmpty(Session.XlfFilePath))
+{
+    <div class="empty-state">
+        <p>No translation file selected.</p>
+        <a class="btn btn-primary" href="/">Go to Setup</a>
+    </div>
+}
+else
+{
+    <div class="toolbar">
+        <div class="toolbar-left">
+            <button class="btn btn-secondary btn-sm" @onclick="RefreshAsync" disabled="@isLoading">
+                Refresh XLF
+            </button>
+            <button class="btn btn-secondary btn-sm" @onclick="LoadTextsAsync" disabled="@isLoading">
+                Reload
+            </button>
+        </div>
+        <div class="toolbar-right">
+            @if (AgentService.IsConfigured)
+            {
+                <button class="btn btn-primary btn-sm" @onclick="BatchTranslateAsync"
+                        disabled="@(isLoading || selectedIds.Count == 0)">
+                    AI Translate (@selectedIds.Count)
+                </button>
+                <button class="btn btn-outline btn-sm" @onclick="SelectAll">
+                    @(selectedIds.Count == texts.Count && texts.Count > 0 ? "Deselect All" : "Select All")
+                </button>
+            }
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(statusMessage))
+    {
+        <div class="alert @(isError ? "alert-error" : "alert-info")">@statusMessage</div>
+    }
+
+    @if (isLoading && texts.Count == 0)
+    {
+        <div class="loading-container">
+            <span class="spinner"></span>
+            <span>Loading texts...</span>
+        </div>
+    }
+    else if (texts.Count == 0)
+    {
+        <div class="empty-state">
+            <p>No untranslated texts found. All translations are up to date!</p>
+        </div>
+    }
+    else
+    {
+        <div class="translation-table">
+            <div class="table-header">
+                <div class="col-check"></div>
+                <div class="col-source">Source</div>
+                <div class="col-target">Translation</div>
+                <div class="col-context">Context</div>
+                <div class="col-actions"></div>
+            </div>
+            @foreach (var text in texts)
+            {
+                <div class="table-row @(selectedIds.Contains(text.Id) ? "selected" : "")">
+                    <div class="col-check">
+                        <input type="checkbox" checked="@selectedIds.Contains(text.Id)"
+                               @onchange="e => ToggleSelection(text.Id, (bool)(e.Value ?? false))" />
+                    </div>
+                    <div class="col-source">
+                        <span class="source-text">@text.SourceText</span>
+                        @if (!string.IsNullOrEmpty(text.Comment))
+                        {
+                            <span class="comment" title="@text.Comment">&#128172; @text.Comment</span>
+                        }
+                        @if (text.MaxLength.HasValue)
+                        {
+                            <span class="max-length" title="Max length">max @text.MaxLength</span>
+                        }
+                    </div>
+                    <div class="col-target">
+                        @if (pendingTranslations.TryGetValue(text.Id, out var pending))
+                        {
+                            <div class="pending-translation">
+                                <input type="text" class="form-control form-control-sm" value="@pending"
+                                       @onchange="@(e => UpdatePending(text.Id, e.Value?.ToString() ?? string.Empty))" />
+                                <div class="pending-actions">
+                                    <button class="btn-icon btn-accept" title="Accept" @onclick="() => SaveSingleAsync(text.Id, pending)">&#10003;</button>
+                                    <button class="btn-icon btn-reject" title="Reject" @onclick="() => RejectPending(text.Id)">&#10007;</button>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <input type="text" class="form-control form-control-sm"
+                                   placeholder="Enter translation..."
+                                   @onkeydown="@(e => OnManualKeyDown(e, text.Id))"
+                                   @bind="manualInputs[text.Id]" />
+                        }
+                    </div>
+                    <div class="col-context">
+                        <span class="context-text" title="@text.Context">@TruncateContext(text.Context)</span>
+                    </div>
+                    <div class="col-actions">
+                        @if (!string.IsNullOrEmpty(manualInputs.GetValueOrDefault(text.Id)))
+                        {
+                            <button class="btn-icon btn-save" title="Save" @onclick="() => SaveManualAsync(text.Id)">&#128190;</button>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="pagination-bar">
+            <button class="btn btn-secondary btn-sm" disabled="@(Session.PageOffset == 0)" @onclick="PreviousPage">
+                Previous
+            </button>
+            <span class="page-info">
+                Showing @(Session.PageOffset + 1)-@(Math.Min(Session.PageOffset + Session.PageSize, totalCount)) of @totalCount
+            </span>
+            <button class="btn btn-secondary btn-sm" disabled="@(Session.PageOffset + Session.PageSize >= totalCount)" @onclick="NextPage">
+                Next
+            </button>
+        </div>
+    }
+}
+
+@code {
+    private List<UntranslatedText> texts = [];
+    private HashSet<string> selectedIds = [];
+    private Dictionary<string, string> pendingTranslations = [];
+    private Dictionary<string, string> manualInputs = [];
+    private int totalCount;
+    private bool isLoading;
+    private bool isError;
+    private string? statusMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(Session.XlfFilePath))
+        {
+            await LoadTextsAsync();
+        }
+    }
+
+    private async Task LoadTextsAsync()
+    {
+        if (string.IsNullOrEmpty(Session.XlfFilePath)) return;
+        isLoading = true;
+        isError = false;
+        statusMessage = null;
+
+        try
+        {
+            var result = await McpBridge.GetTextsToTranslateAsync(
+                Session.XlfFilePath, Session.PageOffset, Session.PageSize);
+            texts = result.Texts;
+            totalCount = result.TotalUntranslatedCount;
+            selectedIds.Clear();
+            pendingTranslations.Clear();
+            manualInputs.Clear();
+            foreach (var t in texts)
+                manualInputs[t.Id] = "";
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+            isError = true;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task RefreshAsync()
+    {
+        if (string.IsNullOrEmpty(Session.XlfFilePath)) return;
+        isLoading = true;
+        statusMessage = "Refreshing XLF file...";
+        try
+        {
+            var result = await McpBridge.RefreshXlfAsync(Session.XlfFilePath);
+            statusMessage = result;
+            Session.PageOffset = 0;
+            await LoadTextsAsync();
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+            isError = true;
+            isLoading = false;
+        }
+    }
+
+    private void ToggleSelection(string id, bool isChecked)
+    {
+        if (isChecked) selectedIds.Add(id);
+        else selectedIds.Remove(id);
+    }
+
+    private void SelectAll()
+    {
+        if (selectedIds.Count == texts.Count)
+            selectedIds.Clear();
+        else
+            selectedIds = texts.Select(t => t.Id).ToHashSet();
+    }
+
+    private async Task BatchTranslateAsync()
+    {
+        if (string.IsNullOrEmpty(Session.XlfFilePath) || selectedIds.Count == 0) return;
+        isLoading = true;
+        statusMessage = null;
+
+        try
+        {
+            var selected = texts.Where(t => selectedIds.Contains(t.Id)).ToList();
+            List<GlossaryEntry>? glossary = null;
+
+            if (!string.IsNullOrEmpty(Session.TargetLanguage))
+            {
+                try
+                {
+                    glossary = await McpBridge.GetGlossaryTermsAsync(Session.TargetLanguage);
+                }
+                catch
+                {
+                    // Glossary is optional
+                }
+            }
+
+            var progress = new Progress<string>(msg =>
+            {
+                statusMessage = msg;
+                InvokeAsync(StateHasChanged);
+            });
+
+            var translations = await AgentService.BatchTranslateAsync(
+                selected, Session.TargetLanguage ?? "da-DK", glossary, progress);
+
+            foreach (var t in translations)
+            {
+                pendingTranslations[t.Id] = t.TargetText;
+            }
+
+            statusMessage = $"AI generated {translations.Count} translations. Review and accept/reject below.";
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+            isError = true;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void UpdatePending(string id, string value)
+    {
+        pendingTranslations[id] = value;
+    }
+
+    private void RejectPending(string id)
+    {
+        pendingTranslations.Remove(id);
+    }
+
+    private async Task SaveSingleAsync(string id, string targetText)
+    {
+        if (string.IsNullOrEmpty(Session.XlfFilePath)) return;
+        try
+        {
+            await McpBridge.SaveTranslatedTextsAsync(Session.XlfFilePath,
+                [new TranslationToSave(id, targetText, "translated")]);
+            pendingTranslations.Remove(id);
+            texts.RemoveAll(t => t.Id == id);
+            totalCount--;
+            statusMessage = "Translation saved.";
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+            isError = true;
+        }
+    }
+
+    private async Task SaveManualAsync(string id)
+    {
+        var value = manualInputs.GetValueOrDefault(id);
+        if (string.IsNullOrEmpty(value) || string.IsNullOrEmpty(Session.XlfFilePath)) return;
+        await SaveSingleAsync(id, value);
+    }
+
+    private async Task OnManualKeyDown(KeyboardEventArgs e, string id)
+    {
+        if (e.Key == "Enter")
+        {
+            await SaveManualAsync(id);
+        }
+    }
+
+    private async Task PreviousPage()
+    {
+        Session.PageOffset = Math.Max(0, Session.PageOffset - Session.PageSize);
+        await LoadTextsAsync();
+    }
+
+    private async Task NextPage()
+    {
+        Session.PageOffset += Session.PageSize;
+        await LoadTextsAsync();
+    }
+
+    private static string TruncateContext(string context)
+    {
+        if (string.IsNullOrEmpty(context)) return "";
+        return context.Length > 60 ? context[..57] + "..." : context;
+    }
+}
