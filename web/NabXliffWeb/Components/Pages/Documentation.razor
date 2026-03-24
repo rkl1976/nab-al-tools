@@ -1039,6 +1039,591 @@
         </div>
     }
 
+    @* ===== Section: Cloud Architecture ===== *@
+    @if (activeTab == "cloud")
+    {
+        <div class="docs-section">
+            <div class="docs-section-label">06 &mdash; Cloud-arkitektur</div>
+            <h2 class="docs-section-title">Kan Web UI'et k&oslash;re i cloud?</h2>
+            <p class="docs-section-desc">
+                I dag k&oslash;rer b&aring;de Blazor-appen og MCP-serveren p&aring; udviklerens maskine.
+                Men hvad hvis man vil have web-UI'et hosted i cloud, s&aring; flere brugere kan tilg&aring; det fra en browser?
+                Her er udfordringen og tre realistiske l&oslash;sninger.
+            </p>
+
+            @* ─── Problemet ─── *@
+            <h3 class="docs-h3">Kerneudfordringen</h3>
+            <div class="docs-explainer">
+                <p>
+                    MCP-serveren <strong>skal</strong> have adgang til <code>.xlf</code>-filerne p&aring; udviklerens maskine.
+                    Blazor UI'et <em>kunne</em> k&oslash;re i cloud. Problemet er broen imellem:
+                    hvordan f&aring;r en cloud-hosted webapp adgang til lokale filer uden at &aring;bne firewall-porte?
+                </p>
+            </div>
+
+            <div class="docs-process-diagram">
+                <div class="docs-process-col">
+                    <div class="docs-process-box process-blazor" style="border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.03);">
+                        <div class="docs-process-title" style="color: #dc2626;">Cloud (Azure / AWS)</div>
+                        <div class="docs-process-sub">Blazor UI &bull; AI-agent &bull; Auth</div>
+                        <div class="docs-process-inner">
+                            <div class="docs-process-component">
+                                <strong>Web UI</strong>
+                                <span>Tilg&aelig;ngelig fra enhver browser</span>
+                            </div>
+                            <div class="docs-process-component">
+                                <strong>Azure OpenAI</strong>
+                                <span>AI-model til overs&aelig;ttelse</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="docs-process-connector">
+                    <div class="docs-process-pipe">
+                        <div class="docs-process-pipe-label" style="color: #dc2626;">?</div>
+                        <div class="docs-process-pipe-arrow" style="color: #dc2626;">&darr; Hvordan?</div>
+                    </div>
+                    <div class="docs-process-pipe">
+                        <div class="docs-process-pipe-arrow" style="color: #dc2626;">&uarr; Hvordan?</div>
+                        <div class="docs-process-pipe-label" style="color: #dc2626;">?</div>
+                    </div>
+                </div>
+
+                <div class="docs-process-col">
+                    <div class="docs-process-box process-node">
+                        <div class="docs-process-title">Lokal maskine</div>
+                        <div class="docs-process-sub">MCP Server &bull; .xlf filer &bull; AL-projekt</div>
+                        <div class="docs-process-inner">
+                            <div class="docs-process-component">
+                                <strong>Node.js MCP</strong>
+                                <span>Skal l&aelig;se/skrive lokale filer</span>
+                            </div>
+                            <div class="docs-process-component">
+                                <strong>Translations/</strong>
+                                <span>*.xlf filerne p&aring; disk</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @* ─── Løsning 1: Lokal sidecar ─── *@
+            <h3 class="docs-h3">L&oslash;sning 1: Lokal sidecar-agent (anbefalet)</h3>
+            <div class="docs-cloud-option recommended">
+                <div class="docs-cloud-badge">Anbefalet</div>
+                <p>
+                    En lille lokal agent k&oslash;rer p&aring; udviklerens maskine. Den starter MCP-serveren og forbinder
+                    <strong>udad</strong> til cloud-UI'et via WebSocket/SignalR. Ingen firewall-&aring;bning n&oslash;dvendig
+                    fordi forbindelsen er udg&aring;ende.
+                </p>
+            </div>
+
+            <div class="docs-cloud-arch">
+                <div class="docs-cloud-layer cloud-layer-top">
+                    <div class="docs-cloud-layer-label">Cloud</div>
+                    <div class="docs-arch-boxes">
+                        <div class="docs-arch-box">
+                            <h5>Blazor Web UI</h5>
+                            <p>Hosted i Azure App Service. Brugere tilg&aring;r via browser.</p>
+                        </div>
+                        <div class="docs-arch-box">
+                            <h5>SignalR Hub</h5>
+                            <p>Real-time forbindelse mellem cloud og lokale agenter. Relayer MCP tool-kald.</p>
+                        </div>
+                        <div class="docs-arch-box">
+                            <h5>Azure OpenAI</h5>
+                            <p>AI-modellen. K&oslash;rer allerede i cloud.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="docs-arch-connector">
+                    <div class="docs-arch-arrow-line"></div>
+                    <span>&#9660; SignalR/WebSocket (udg&aring;ende fra lokal maskine)</span>
+                </div>
+
+                <div class="docs-cloud-layer cloud-layer-bottom">
+                    <div class="docs-cloud-layer-label">Lokal maskine</div>
+                    <div class="docs-arch-boxes">
+                        <div class="docs-arch-box">
+                            <h5>Sidecar Agent (.NET)</h5>
+                            <p>Lille console-app. Forbinder til cloud-hub. Relayer tool-kald til MCP.</p>
+                        </div>
+                        <div class="docs-arch-box">
+                            <h5>Node.js MCP Server</h5>
+                            <p>Startet af sidecar via stdio. Samme server som i dag.</p>
+                        </div>
+                        <div class="docs-arch-box">
+                            <h5>.xlf filer</h5>
+                            <p>Forbliver lokalt. Aldrig uploadet til cloud.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="docs-callout">
+                <strong>Fordele:</strong> Filerne forlader aldrig maskinen. Ingen firewall-konfiguration.
+                Flere udviklere kan bruge samme cloud-UI med hver sin lokale agent.
+                Sidecar'en er en simpel .NET console-app p&aring; ~100 linjer.
+            </div>
+
+            <h4 class="docs-h4">Kommunikationsflow</h4>
+            <div class="docs-comm-flow">
+                <div class="docs-comm-step">
+                    <div class="docs-comm-node comm-user">Bruger (browser)</div>
+                    <div class="docs-comm-label">"Overs&aelig;t 10 tekster" i cloud-UI</div>
+                </div>
+                <div class="docs-comm-arrow">&darr;</div>
+                <div class="docs-comm-step">
+                    <div class="docs-comm-node comm-blazor">Blazor (cloud)</div>
+                    <div class="docs-comm-label">Sender tool-kald via SignalR hub til den rette brugers agent</div>
+                </div>
+                <div class="docs-comm-arrow">&darr; <span class="docs-comm-transport">WebSocket (krypteret)</span></div>
+                <div class="docs-comm-step">
+                    <div class="docs-comm-node comm-node">Sidecar Agent (lokal)</div>
+                    <div class="docs-comm-label">Modtager kald, videresender til MCP via stdin</div>
+                </div>
+                <div class="docs-comm-arrow">&darr; <span class="docs-comm-transport">stdio (JSON)</span></div>
+                <div class="docs-comm-step">
+                    <div class="docs-comm-node comm-disk">Node.js MCP</div>
+                    <div class="docs-comm-label">L&aelig;ser .xlf, udf&oslash;rer operation, returnerer resultat</div>
+                </div>
+                <div class="docs-comm-arrow">&uarr; <span class="docs-comm-transport">Hele vejen tilbage</span></div>
+                <div class="docs-comm-step">
+                    <div class="docs-comm-node comm-user">Bruger (browser)</div>
+                    <div class="docs-comm-label">Ser resultater i UI'et</div>
+                </div>
+            </div>
+
+            @* ─── Løsning 2: MCP over HTTP ─── *@
+            <h3 class="docs-h3">L&oslash;sning 2: MCP over HTTP med tunnel</h3>
+            <div class="docs-cloud-option">
+                <p>
+                    MCP SDK'et underst&oslash;tter <strong>SSE (Server-Sent Events)</strong> som transport i stedet for stdio.
+                    MCP-serveren k&oslash;rer lokalt med en HTTP-endpoint, og en tunnel-service (Azure DevTunnels, Cloudflare Tunnel)
+                    eksponerer den sikkert til cloud-UI'et.
+                </p>
+            </div>
+
+            <div class="docs-process-diagram">
+                <div class="docs-process-col">
+                    <div class="docs-process-box process-blazor">
+                        <div class="docs-process-title">Cloud UI</div>
+                        <div class="docs-process-sub">Blazor &bull; Azure</div>
+                        <div class="docs-process-inner">
+                            <div class="docs-process-component">
+                                <strong>HTTP-klient</strong>
+                                <span>Kalder MCP via tunnel-URL</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="docs-process-connector">
+                    <div class="docs-process-pipe">
+                        <div class="docs-process-pipe-label">HTTPS</div>
+                        <div class="docs-process-pipe-arrow">&darr; SSE</div>
+                    </div>
+                    <div class="docs-process-pipe">
+                        <div class="docs-process-pipe-arrow">&uarr; JSON</div>
+                        <div class="docs-process-pipe-label">tunnel</div>
+                    </div>
+                </div>
+
+                <div class="docs-process-col">
+                    <div class="docs-process-box process-node">
+                        <div class="docs-process-title">Lokal maskine</div>
+                        <div class="docs-process-sub">DevTunnel &bull; MCP (SSE mode)</div>
+                        <div class="docs-process-inner">
+                            <div class="docs-process-component">
+                                <strong>Azure DevTunnel</strong>
+                                <span>Eksponerer lokal port sikkert</span>
+                            </div>
+                            <div class="docs-process-component">
+                                <strong>MCP Server (SSE)</strong>
+                                <span>Lytter p&aring; localhost:3000</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="docs-two-col" style="margin-top: 1rem;">
+                <div class="docs-explainer" style="margin-bottom: 0;">
+                    <p><strong style="color: #059669;">Fordele:</strong> Minimal kode&aelig;ndring &mdash; MCP SDK understøtter SSE out-of-the-box. DevTunnels er gratis og kr&aelig;ver &eacute;n kommando: <code>devtunnel host -p 3000</code>.</p>
+                </div>
+                <div class="docs-explainer" style="margin-bottom: 0;">
+                    <p><strong style="color: #dc2626;">Ulemper:</strong> Tunnel-URL er midlertidig (skifter ved genstart). Brugeren skal starte tunnel manuelt. Latency er h&oslash;jere end sidecar.</p>
+                </div>
+            </div>
+
+            @* ─── Løsning 3: Git-baseret ─── *@
+            <h3 class="docs-h3">L&oslash;sning 3: Git-baseret sync</h3>
+            <div class="docs-cloud-option">
+                <p>
+                    Filerne synkroniseres til cloud via <strong>git</strong>. MCP-serveren k&oslash;rer i cloud og arbejder p&aring; en klone af repo'et.
+                    &AElig;ndringer pushes tilbage som commits.
+                </p>
+            </div>
+
+            <div class="docs-dataflow">
+                <div class="docs-df-node df-blue">
+                    <div class="docs-df-label">Udvikler</div>
+                    <div class="docs-df-sub">git push</div>
+                </div>
+                <div class="docs-df-arrow">&#8594;</div>
+                <div class="docs-df-node df-gold">
+                    <div class="docs-df-label">Git repo</div>
+                    <div class="docs-df-sub">GitHub / Azure DevOps</div>
+                </div>
+                <div class="docs-df-arrow">&#8594;</div>
+                <div class="docs-df-node df-purple">
+                    <div class="docs-df-label">Cloud MCP</div>
+                    <div class="docs-df-sub">git pull &rarr; overs&aelig;t</div>
+                </div>
+                <div class="docs-df-arrow">&#8594;</div>
+                <div class="docs-df-node df-green">
+                    <div class="docs-df-label">PR / commit</div>
+                    <div class="docs-df-sub">med overs&aelig;ttelser</div>
+                </div>
+            </div>
+
+            <div class="docs-two-col" style="margin-top: 1rem;">
+                <div class="docs-explainer" style="margin-bottom: 0;">
+                    <p><strong style="color: #059669;">Fordele:</strong> Helt cloud-native. Ingen lokal software ud over git. Perfekt til CI/CD-pipelines og automatiserede workflows. Audit trail via git-historik.</p>
+                </div>
+                <div class="docs-explainer" style="margin-bottom: 0;">
+                    <p><strong style="color: #dc2626;">Ulemper:</strong> Ikke real-time. Kræver git commit/push/pull-cyklus. Merge-konflikter mulige. Tab af "live editing"-følelsen.</p>
+                </div>
+            </div>
+
+            @* ─── Sammenligning ─── *@
+            <h3 class="docs-h3">Sammenligning</h3>
+            <div class="docs-comparison-table">
+                <div class="docs-comp-header">
+                    <div class="docs-comp-cell"></div>
+                    <div class="docs-comp-cell">Sidecar</div>
+                    <div class="docs-comp-cell">HTTP Tunnel</div>
+                    <div class="docs-comp-cell">Git Sync</div>
+                </div>
+                <div class="docs-comp-row">
+                    <div class="docs-comp-cell docs-comp-label">Real-time</div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-no">&#10007;</span></div>
+                </div>
+                <div class="docs-comp-row">
+                    <div class="docs-comp-cell docs-comp-label">Ingen firewall-&aring;bning</div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                </div>
+                <div class="docs-comp-row">
+                    <div class="docs-comp-cell docs-comp-label">Ingen lokal software</div>
+                    <div class="docs-comp-cell"><span class="docs-comp-no">&#10007;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-no">&#10007;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                </div>
+                <div class="docs-comp-row">
+                    <div class="docs-comp-cell docs-comp-label">Filer forbliver lokalt</div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-no">&#10007;</span></div>
+                </div>
+                <div class="docs-comp-row">
+                    <div class="docs-comp-cell docs-comp-label">Kode&aelig;ndring</div>
+                    <div class="docs-comp-cell">Moderat</div>
+                    <div class="docs-comp-cell">Minimal</div>
+                    <div class="docs-comp-cell">Stor</div>
+                </div>
+                <div class="docs-comp-row">
+                    <div class="docs-comp-cell docs-comp-label">Bedst til</div>
+                    <div class="docs-comp-cell">Team-brug</div>
+                    <div class="docs-comp-cell">Hurtig POC</div>
+                    <div class="docs-comp-cell">CI/CD</div>
+                </div>
+            </div>
+
+            <div class="docs-callout" style="margin-top: 1.5rem;">
+                <strong>Cloud-konklusion:</strong> For det typiske scenarie &mdash; et team af BC-udviklere der vil dele et overs&aelig;ttelses-UI &mdash;
+                er <strong>sidecar-agenten</strong> den bedste vej. Men der findes en endnu simplere vej...
+            </div>
+
+            @* ─── PWA / Desktop App ─── *@
+            <h2 class="docs-section-title" style="margin-top: 3rem;">Alternativ: Lokal desktop-app</h2>
+            <p class="docs-section-desc">
+                I stedet for at flytte UI'et til cloud og bygge en bro tilbage til lokale filer,
+                kan man g&aring; den modsatte vej: <strong>pak hele l&oslash;sningen som en lokal app</strong>.
+                S&aring; er der ingen bro, ingen tunnel, ingen firewall &mdash; alt k&oslash;rer p&aring; maskinen.
+            </p>
+
+            <div class="docs-explainer">
+                <p>
+                    T&aelig;nk p&aring; det som forskellen mellem Google Docs (cloud) og VS Code (lokal app med web-teknologi).
+                    Blazor-appen er allerede et web-UI &mdash; den skal bare pakkes ind, s&aring; brugeren kan installere den som en app.
+                </p>
+            </div>
+
+            @* ── Arkitektur-diagram ── *@
+            <h3 class="docs-h3">Alt i &eacute;n boks</h3>
+            <div class="docs-desktop-arch">
+                <div class="docs-desktop-shell">
+                    <div class="docs-desktop-shell-title">
+                        <span class="docs-desktop-dots">
+                            <span class="dot-red"></span><span class="dot-yellow"></span><span class="dot-green"></span>
+                        </span>
+                        NAB XLIFF Translator
+                    </div>
+                    <div class="docs-desktop-inner">
+                        <div class="docs-desktop-layer">
+                            <div class="docs-desktop-component primary">
+                                <strong>Blazor Web UI</strong>
+                                <span>Setup, Chat, Translate, Review, Search, Docs</span>
+                            </div>
+                        </div>
+                        <div class="docs-desktop-layer">
+                            <div class="docs-desktop-component secondary">
+                                <strong>Kestrel webserver</strong>
+                                <span>Indbygget i .NET &mdash; serverer UI p&aring; localhost</span>
+                            </div>
+                            <div class="docs-desktop-component secondary">
+                                <strong>McpBridgeService</strong>
+                                <span>Starter og styrer Node.js-processen</span>
+                            </div>
+                        </div>
+                        <div class="docs-desktop-layer">
+                            <div class="docs-desktop-component tertiary">
+                                <strong>Node.js MCP Server</strong>
+                                <span>Child process &bull; stdio</span>
+                            </div>
+                            <div class="docs-desktop-component tertiary">
+                                <strong>Lokale .xlf filer</strong>
+                                <span>L&aelig;ses/skrives direkte</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @* ── 3 Approaches ── *@
+            <h3 class="docs-h3">Tre m&aring;der at pakke det p&aring;</h3>
+
+            <div class="docs-approach-grid">
+                <div class="docs-approach-card">
+                    <div class="docs-approach-num">A</div>
+                    <h4>PWA (Progressive Web App)</h4>
+                    <p class="docs-approach-how">
+                        Tilf&oslash;j en <code>manifest.json</code> og en service worker til den eksisterende Blazor-app.
+                        Brugeren &aring;bner appen i Chrome/Edge og klikker <strong>"Install app"</strong> i adresselinjen.
+                    </p>
+                    <div class="docs-approach-details">
+                        <div class="docs-approach-pro">
+                            <strong>Fordele</strong>
+                            <ul>
+                                <li>Minimal kode&aelig;ndring (2-3 filer)</li>
+                                <li>Eget app-vindue, ikon i proceslinjen</li>
+                                <li>Auto-opdatering via service worker</li>
+                                <li>Virker p&aring; Windows, Mac, Linux</li>
+                            </ul>
+                        </div>
+                        <div class="docs-approach-con">
+                            <strong>Ulemper</strong>
+                            <ul>
+                                <li>Kræver <code>dotnet run</code> i baggrunden</li>
+                                <li>Brugeren skal starte serveren manuelt</li>
+                                <li>Ingen system tray-integration</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="docs-code-block" style="margin-top: 0.75rem;">
+                        <div class="docs-code-title">Kode&aelig;ndring: 2 filer</div>
+                        <pre><code><span class="cc">// wwwroot/manifest.json</span>
+{
+  <span class="cf">"name"</span>: <span class="cs">"NAB XLIFF Translator"</span>,
+  <span class="cf">"short_name"</span>: <span class="cs">"NAB XLIFF"</span>,
+  <span class="cf">"display"</span>: <span class="cs">"standalone"</span>,
+  <span class="cf">"start_url"</span>: <span class="cs">"/"</span>,
+  <span class="cf">"icons"</span>: [...]
+}
+
+<span class="cc">// Tilf&oslash;j i &lt;head&gt; i App.razor:</span>
+&lt;<span class="ck">link</span> <span class="cf">rel</span>=<span class="cs">"manifest"</span>
+      <span class="cf">href</span>=<span class="cs">"manifest.json"</span> /&gt;</code></pre>
+                    </div>
+                </div>
+
+                <div class="docs-approach-card recommended-approach">
+                    <div class="docs-approach-num">B</div>
+                    <div class="docs-cloud-badge">Anbefalet</div>
+                    <h4>.NET MAUI Blazor Hybrid</h4>
+                    <p class="docs-approach-how">
+                        Blazor UI pakket i en <strong>native app-shell</strong> via .NET MAUI.
+                        &Eacute;n <code>.exe</code> der indeholder webserver + UI + starter Node.js MCP automatisk.
+                        Brugeren dobbeltklikker og er i gang.
+                    </p>
+                    <div class="docs-approach-details">
+                        <div class="docs-approach-pro">
+                            <strong>Fordele</strong>
+                            <ul>
+                                <li>&AElig;gte desktop-app (.exe / .app)</li>
+                                <li>System tray, auto-start med Windows</li>
+                                <li>Kan bundle Node.js runtime</li>
+                                <li>Adgang til native API'er (fil-dialog osv.)</li>
+                                <li>Genbruger 100% af Blazor-komponenterne</li>
+                            </ul>
+                        </div>
+                        <div class="docs-approach-con">
+                            <strong>Ulemper</strong>
+                            <ul>
+                                <li>Kræver MAUI workload ved udvikling</li>
+                                <li>St&oslash;rre installationsfil (~80MB)</li>
+                                <li>Separate builds per platform</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="docs-code-block" style="margin-top: 0.75rem;">
+                        <div class="docs-code-title">Projekt-struktur</div>
+                        <pre><code><span class="cc">// Nyt MAUI-projekt der refererer eksisterende Blazor</span>
+NabXliffApp/
+  <span class="cf">MauiProgram.cs</span>      <span class="cc">// MAUI bootstrap</span>
+  <span class="cf">MainPage.xaml</span>       <span class="cc">// BlazorWebView</span>
+  <span class="cf">wwwroot/</span>            <span class="cc">// symlink til web/wwwroot</span>
+  <span class="cf">Components/</span>         <span class="cc">// symlink til web/Components</span>
+
+<span class="cc">// MainPage.xaml:</span>
+&lt;<span class="ck">BlazorWebView</span> <span class="cf">HostPage</span>=<span class="cs">"wwwroot/index.html"</span>&gt;
+  &lt;<span class="ck">RootComponent</span> <span class="cf">ComponentType</span>=<span class="cs">"typeof(App)"</span> /&gt;
+&lt;/<span class="ck">BlazorWebView</span>&gt;</code></pre>
+                    </div>
+                </div>
+
+                <div class="docs-approach-card">
+                    <div class="docs-approach-num">C</div>
+                    <h4>Self-contained .exe</h4>
+                    <p class="docs-approach-how">
+                        <code>dotnet publish --self-contained</code> giver &eacute;n mappe med hele .NET runtime.
+                        Kombineret med en <strong>launcher</strong> der starter Kestrel + &aring;bner browseren.
+                        T&aelig;nk "Electron-light uden Chromium".
+                    </p>
+                    <div class="docs-approach-details">
+                        <div class="docs-approach-pro">
+                            <strong>Fordele</strong>
+                            <ul>
+                                <li>Ingen .NET SDK n&oslash;dvendig hos bruger</li>
+                                <li>Simpel distribution (zip-fil)</li>
+                                <li>Mindste kode&aelig;ndring (kun publish-config)</li>
+                                <li>Virker i dag med &eacute;n kommando</li>
+                            </ul>
+                        </div>
+                        <div class="docs-approach-con">
+                            <strong>Ulemper</strong>
+                            <ul>
+                                <li>&Aring;bner i brugerens browser (ikke eget vindue)</li>
+                                <li>Brugeren skal lukke console-vinduet manuelt</li>
+                                <li>Ingen auto-opdatering</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="docs-code-block" style="margin-top: 0.75rem;">
+                        <div class="docs-code-title">Publicer som self-contained</div>
+                        <pre><code><span class="cf">dotnet</span> publish -c Release \
+  --self-contained \
+  -r <span class="cs">win-x64</span> \
+  -o <span class="cs">./publish</span>
+
+<span class="cc"># Resultat: publish/ mappe med alt</span>
+<span class="cc"># Brugeren k&oslash;rer: NabXliffWeb.exe</span>
+<span class="cc"># &Aring;bner browser p&aring; http://localhost:5000</span></code></pre>
+                    </div>
+                </div>
+            </div>
+
+            @* ── Sammenligning ── *@
+            <h3 class="docs-h3">Samlet sammenligning: alle l&oslash;sninger</h3>
+            <div class="docs-comparison-table">
+                <div class="docs-comp-header" style="grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr 1fr 1fr;">
+                    <div class="docs-comp-cell"></div>
+                    <div class="docs-comp-cell">PWA</div>
+                    <div class="docs-comp-cell">MAUI</div>
+                    <div class="docs-comp-cell">Self-cont.</div>
+                    <div class="docs-comp-cell">Sidecar</div>
+                    <div class="docs-comp-cell">Tunnel</div>
+                    <div class="docs-comp-cell">Git Sync</div>
+                </div>
+                <div class="docs-comp-row" style="grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr 1fr 1fr;">
+                    <div class="docs-comp-cell docs-comp-label">Eget app-vindue</div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-no">&#10007;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                </div>
+                <div class="docs-comp-row" style="grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr 1fr 1fr;">
+                    <div class="docs-comp-cell docs-comp-label">Alt lokalt</div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-no">&#10007;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-no">&#10007;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-no">&#10007;</span></div>
+                </div>
+                <div class="docs-comp-row" style="grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr 1fr 1fr;">
+                    <div class="docs-comp-cell docs-comp-label">Kode&aelig;ndring</div>
+                    <div class="docs-comp-cell">Minimal</div>
+                    <div class="docs-comp-cell">Moderat</div>
+                    <div class="docs-comp-cell">Ingen</div>
+                    <div class="docs-comp-cell">Moderat</div>
+                    <div class="docs-comp-cell">Minimal</div>
+                    <div class="docs-comp-cell">Stor</div>
+                </div>
+                <div class="docs-comp-row" style="grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr 1fr 1fr;">
+                    <div class="docs-comp-cell docs-comp-label">Installationsfil</div>
+                    <div class="docs-comp-cell">Ingen</div>
+                    <div class="docs-comp-cell">~80MB</div>
+                    <div class="docs-comp-cell">~60MB</div>
+                    <div class="docs-comp-cell">Cloud</div>
+                    <div class="docs-comp-cell">Cloud</div>
+                    <div class="docs-comp-cell">Cloud</div>
+                </div>
+                <div class="docs-comp-row" style="grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr 1fr 1fr;">
+                    <div class="docs-comp-cell docs-comp-label">System tray</div>
+                    <div class="docs-comp-cell"><span class="docs-comp-no">&#10007;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-no">&#10007;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-no">&#10007;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-no">&#10007;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-no">&#10007;</span></div>
+                </div>
+                <div class="docs-comp-row" style="grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr 1fr 1fr;">
+                    <div class="docs-comp-cell docs-comp-label">Multi-bruger</div>
+                    <div class="docs-comp-cell"><span class="docs-comp-no">&#10007;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-no">&#10007;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-no">&#10007;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                </div>
+                <div class="docs-comp-row" style="grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr 1fr 1fr;">
+                    <div class="docs-comp-cell docs-comp-label">Bedst til</div>
+                    <div class="docs-comp-cell">Hurtig start</div>
+                    <div class="docs-comp-cell">Produkt</div>
+                    <div class="docs-comp-cell">Distribution</div>
+                    <div class="docs-comp-cell">Team</div>
+                    <div class="docs-comp-cell">POC</div>
+                    <div class="docs-comp-cell">CI/CD</div>
+                </div>
+            </div>
+
+            <div class="docs-callout" style="margin-top: 1.5rem;">
+                <strong>Anbefaling:</strong> Start med <strong>PWA</strong> (2 filers &aelig;ndring, virker i dag).
+                N&aring;r produktet modnes, migr&eacute;r til <strong>.NET MAUI Blazor Hybrid</strong> for en &aelig;gte desktop-oplevelse
+                med system tray, auto-start, og bundlet Node.js. Alle Blazor-komponenter genbruges 1:1.
+            </div>
+        </div>
+    }
+
     @* ===== Section: Det smarte ===== *@
     @if (activeTab == "smart")
     {
@@ -1139,6 +1724,7 @@
         new("architecture", "Arkitektur", "\U0001f3d7\ufe0f"),
         new("ai", "AI-integration", "\U0001f916"),
         new("mcp", "MCP Server", "\U0001f50c"),
+        new("cloud", "Cloud", "\u2601\ufe0f"),
         new("smart", "Det smarte", "\U0001f4a1"),
     ];
 
