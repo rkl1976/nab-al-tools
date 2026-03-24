@@ -58,15 +58,37 @@ jobs:
           echo "thumbprint=$($cert.Thumbprint)" >> $env:GITHUB_OUTPUT
           echo "Certificate created with thumbprint: $($cert.Thumbprint)"
 
+      - name: Generate MSIX icon PNGs
+        run: |
+          # MSIX needs PNG icons - create simple colored squares as placeholders
+          Add-Type -AssemblyName System.Drawing
+          foreach ($size in @(44, 150, 310)) {
+            $bmp = New-Object System.Drawing.Bitmap $size, $size
+            $g = [System.Drawing.Graphics]::FromImage($bmp)
+            $g.Clear([System.Drawing.Color]::FromArgb(102, 126, 234))
+            $font = New-Object System.Drawing.Font("Segoe UI", [math]::Floor($size * 0.5), [System.Drawing.FontStyle]::Bold)
+            $sf = New-Object System.Drawing.StringFormat
+            $sf.Alignment = [System.Drawing.StringAlignment]::Center
+            $sf.LineAlignment = [System.Drawing.StringAlignment]::Center
+            $rect = New-Object System.Drawing.RectangleF(0, 0, $size, $size)
+            $g.DrawString("T", $font, [System.Drawing.Brushes]::White, $rect, $sf)
+            $g.Dispose()
+            $bmp.Save("web/NabXliffApp/Resources/AppIcon/appicon${size}x${size}.png", [System.Drawing.Imaging.ImageFormat]::Png)
+            $bmp.Dispose()
+          }
+          # Also create StoreLogo
+          Copy-Item "web/NabXliffApp/Resources/AppIcon/appicon44x44.png" "web/NabXliffApp/Resources/AppIcon/storelogo.png"
+
       - name: Publish MSIX installer
         run: |
           dotnet publish web/NabXliffApp/NabXliffApp.csproj `
             -c Release `
             -f net10.0-windows10.0.19041.0 `
+            -r win-x64 `
             -p:WindowsPackageType=MSIX `
-            -p:RuntimeIdentifierOverride=win-x64 `
             -p:PackageCertificateThumbprint=${{ steps.cert.outputs.thumbprint }} `
             -p:AppxPackageSigningEnabled=true
+        continue-on-error: true
 
       - name: Find and rename MSIX
         id: msix
@@ -78,8 +100,15 @@ jobs:
             echo "found=true" >> $env:GITHUB_OUTPUT
             echo "MSIX found: $($msix.FullName)"
           } else {
-            echo "found=false" >> $env:GITHUB_OUTPUT
-            echo "::warning::MSIX file not found. Only ZIP will be published."
+            # Also check AppPackages folder
+            $msix = Get-ChildItem -Path . -Recurse -Filter "*.msix" -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($msix) {
+              Copy-Item $msix.FullName "./NabXliffApp-win-x64.msix"
+              echo "found=true" >> $env:GITHUB_OUTPUT
+            } else {
+              echo "found=false" >> $env:GITHUB_OUTPUT
+              echo "::warning::MSIX file not found. Only ZIP will be published."
+            }
           }
 
       - name: Upload portable ZIP artifact
