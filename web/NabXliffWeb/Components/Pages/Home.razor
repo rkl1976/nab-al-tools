@@ -77,11 +77,7 @@
         @if (currentStep == 2)
         {
             <div class="step-content">
-                @if (xlfFiles.Count == 0)
-                {
-                    <div class="alert alert-info">No translation files (.xlf) found in the Translations folder.</div>
-                }
-                else
+                @if (xlfFiles.Count > 0)
                 {
                     <div class="xlf-file-list">
                         @foreach (var file in xlfFiles)
@@ -101,6 +97,72 @@
                         }
                     </div>
                 }
+                else
+                {
+                    <div class="alert alert-info">No translation files (.xlf) found in the Translations folder. Create one below.</div>
+                }
+
+                @* ── Create New Language ── *@
+                <div class="create-language-section">
+                    <button class="btn btn-outline btn-sm" @onclick="() => showCreateLanguage = !showCreateLanguage">
+                        @(showCreateLanguage ? "Cancel" : "+ Add New Language")
+                    </button>
+
+                    @if (showCreateLanguage)
+                    {
+                        <div class="create-language-form">
+                            <div class="form-section">
+                                <label class="form-label">Language Code</label>
+                                <div class="language-picker">
+                                    <select class="form-control" @bind="newLanguageCode" disabled="@isCreatingLanguage">
+                                        <option value="">Select language...</option>
+                                        @foreach (var lang in availableLanguages)
+                                        {
+                                            <option value="@lang.Code">@lang.Name (@lang.Code)</option>
+                                        }
+                                    </select>
+                                </div>
+                                <small class="form-hint">Or type a custom code (e.g. pt-BR, zh-CN)</small>
+                                <input type="text" class="form-control form-control-sm" style="margin-top: 0.35rem; max-width: 200px;"
+                                       @bind="newLanguageCode" placeholder="Custom code..."
+                                       disabled="@isCreatingLanguage" />
+                            </div>
+
+                            <div class="form-section">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" @bind="matchBaseApp" disabled="@isCreatingLanguage" />
+                                    Match translations from Microsoft Base App
+                                </label>
+                                <small class="form-hint">
+                                    Pre-populates translations using Microsoft's official Business Central translations.
+                                    Requires internet connection.
+                                </small>
+                            </div>
+
+                            <div class="form-actions">
+                                <button class="btn btn-primary" @onclick="CreateLanguageAsync"
+                                        disabled="@(isCreatingLanguage || string.IsNullOrWhiteSpace(newLanguageCode))">
+                                    @if (isCreatingLanguage)
+                                    {
+                                        <span class="spinner"></span>
+                                        <span>Creating...</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Create Language File</span>
+                                    }
+                                </button>
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(createLanguageMessage))
+                            {
+                                <div class="alert @(createLanguageError ? "alert-error" : "alert-success")">
+                                    @createLanguageMessage
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
             </div>
         }
         else if (currentStep > 2)
@@ -148,6 +210,40 @@
     private string? errorMessage;
     private List<string> xlfFiles = [];
     private int currentStep = 1;
+
+    // Create language state
+    private bool showCreateLanguage;
+    private string newLanguageCode = "";
+    private bool matchBaseApp;
+    private bool isCreatingLanguage;
+    private string? createLanguageMessage;
+    private bool createLanguageError;
+
+    private record LanguageOption(string Code, string Name);
+    private static readonly LanguageOption[] availableLanguages =
+    [
+        new("da-DK", "Danish"),
+        new("de-DE", "German"),
+        new("es-ES", "Spanish"),
+        new("fi-FI", "Finnish"),
+        new("fr-FR", "French"),
+        new("is-IS", "Icelandic"),
+        new("it-IT", "Italian"),
+        new("nb-NO", "Norwegian Bokm\u00e5l"),
+        new("nl-NL", "Dutch"),
+        new("sv-SE", "Swedish"),
+        new("pl-PL", "Polish"),
+        new("pt-BR", "Portuguese (Brazil)"),
+        new("cs-CZ", "Czech"),
+        new("hu-HU", "Hungarian"),
+        new("ro-RO", "Romanian"),
+        new("bg-BG", "Bulgarian"),
+        new("hr-HR", "Croatian"),
+        new("sl-SI", "Slovenian"),
+        new("et-EE", "Estonian"),
+        new("lv-LV", "Latvian"),
+        new("lt-LT", "Lithuanian"),
+    ];
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -253,6 +349,58 @@
     private void GoToStep(int step)
     {
         currentStep = step;
+    }
+
+    private async Task CreateLanguageAsync()
+    {
+        if (string.IsNullOrWhiteSpace(newLanguageCode)) return;
+
+        isCreatingLanguage = true;
+        createLanguageMessage = null;
+        createLanguageError = false;
+        StateHasChanged();
+
+        try
+        {
+            var result = await McpBridge.CreateLanguageXlfAsync(
+                newLanguageCode.Trim(), matchBaseApp);
+
+            // Refresh the file list
+            var translationsFolder = System.IO.Path.Combine(appFolderPath, "Translations");
+            if (System.IO.Directory.Exists(translationsFolder))
+            {
+                xlfFiles = System.IO.Directory.GetFiles(translationsFolder, "*.xlf")
+                    .Where(f => !f.EndsWith(".g.xlf", StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(f => f)
+                    .ToList();
+                Session.AvailableXlfFiles = xlfFiles;
+            }
+
+            var matchInfo = result.NumberOfMatches > 0
+                ? $" {result.NumberOfMatches} translations matched from Base App."
+                : "";
+            createLanguageMessage = $"Created {System.IO.Path.GetFileName(result.TargetXlfFilepath)}.{matchInfo}";
+            createLanguageError = false;
+
+            // Auto-select the new file
+            SelectXlfFile(result.TargetXlfFilepath);
+            showCreateLanguage = false;
+            newLanguageCode = "";
+
+            Logger.LogInformation("[Home] Created language file: {Path} with {Matches} matches",
+                result.TargetXlfFilepath, result.NumberOfMatches);
+        }
+        catch (Exception ex)
+        {
+            createLanguageMessage = ex.Message;
+            createLanguageError = true;
+            Logger.LogError(ex, "[Home] Failed to create language file for {Lang}", newLanguageCode);
+        }
+        finally
+        {
+            isCreatingLanguage = false;
+            StateHasChanged();
+        }
     }
 
     private void GoToChat()

@@ -211,6 +211,47 @@ public sealed class McpBridgeService : IAsyncDisposable
         return parsed;
     }
 
+    public async Task<CreateLanguageXlfResult> CreateLanguageXlfAsync(
+        string targetLanguageCode, bool matchBaseAppTranslation = false,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("[McpBridge] CreateLanguageXlfAsync(target={Target}, matchBaseApp={Match})",
+            targetLanguageCode, matchBaseAppTranslation);
+
+        var result = await CallToolAsync("createLanguageXlf", new Dictionary<string, object?>
+        {
+            ["targetLanguageCode"] = targetLanguageCode,
+            ["matchBaseAppTranslation"] = matchBaseAppTranslation
+        }, cancellationToken);
+
+        // MCP tool returns plain text: Successfully created XLF file: "path" with N matches.
+        var parsed = ParseCreateLanguageResult(result);
+
+        _logger.LogInformation("[McpBridge] CreateLanguageXlf created {FilePath} with {Matches} matches",
+            parsed.TargetXlfFilepath, parsed.NumberOfMatches);
+        return parsed;
+    }
+
+    private static CreateLanguageXlfResult ParseCreateLanguageResult(string response)
+    {
+        // Format: Successfully created XLF file: "C:/path/to/file.xlf" with 142 matches.
+        var filePath = "";
+        var matches = 0;
+
+        var fileMatch = System.Text.RegularExpressions.Regex.Match(response, "\"([^\"]+\\.xlf)\"");
+        if (fileMatch.Success)
+            filePath = fileMatch.Groups[1].Value;
+
+        var matchCount = System.Text.RegularExpressions.Regex.Match(response, @"(\d+)\s+match");
+        if (matchCount.Success)
+            matches = int.Parse(matchCount.Groups[1].Value);
+
+        if (string.IsNullOrEmpty(filePath))
+            throw new InvalidOperationException($"Could not parse createLanguageXlf response: {response}");
+
+        return new CreateLanguageXlfResult(matches, filePath);
+    }
+
     public async Task<string> RefreshXlfAsync(string filePath, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("[McpBridge] RefreshXlfAsync(filePath={FilePath})", filePath);

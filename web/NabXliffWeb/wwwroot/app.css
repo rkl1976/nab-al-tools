@@ -670,6 +670,25 @@ html, body {
     font-weight: 700;
 }
 
+/* ===== Create Language ===== */
+.create-language-section {
+    margin-top: 1.25rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.create-language-form {
+    margin-top: 1rem;
+    padding: 1.25rem;
+    background: #f9fafb;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+}
+
+.language-picker select {
+    max-width: 320px;
+}
+
 /* ===== Loading & Empty ===== */
 .loading-container {
     display: flex;
@@ -1737,6 +1756,428 @@ html, body {
     margin-top: 2.5rem;
 }
 
+/* Docs Explainer */
+.docs-explainer {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.docs-explainer p {
+    color: #4b5563;
+    font-size: 0.9rem;
+    line-height: 1.7;
+    margin: 0;
+}
+
+.docs-explainer code {
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.82em;
+    background: #f3f4f6;
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+    color: #667eea;
+}
+
+/* MCP Tool Detail Cards */
+.docs-tool-detail {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    margin-bottom: 0.5rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.docs-tool-detail:hover {
+    border-color: #d1d5db;
+}
+
+.docs-tool-detail.expanded {
+    border-color: #667eea;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+}
+
+.docs-tool-detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    gap: 1rem;
+}
+
+.docs-tool-subtitle {
+    font-size: 0.8rem;
+    color: #9ca3af;
+}
+
+.docs-tool-badges {
+    display: flex;
+    gap: 0.35rem;
+    flex-shrink: 0;
+}
+
+.docs-expand-icon {
+    color: #9ca3af;
+    font-size: 0.7rem;
+    flex-shrink: 0;
+}
+
+.docs-tool-detail-body {
+    padding: 0 1.25rem 1.25rem;
+    border-top: 1px solid #f3f4f6;
+    padding-top: 1rem;
+    cursor: default;
+    animation: docsFadeIn 0.2s ease-out;
+}
+
+.docs-tool-explain {
+    font-size: 0.88rem;
+    color: #4b5563;
+    line-height: 1.7;
+}
+
+.docs-tool-explain code {
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.82em;
+    background: #f3f4f6;
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+    color: #667eea;
+}
+
+.docs-mini-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #9ca3af;
+    margin-bottom: 0.25rem;
+}
+
+/* Status Flow */
+.docs-status-flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    flex-wrap: wrap;
+    padding: 1.5rem;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+}
+
+.docs-status-node {
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.docs-status-node strong {
+    display: block;
+    font-size: 0.78rem;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+}
+
+.docs-status-node span {
+    display: block;
+    font-size: 0.68rem;
+    margin-top: 0.15rem;
+}
+
+.status-untranslated { background: rgba(239, 68, 68, 0.08); color: #dc2626; }
+.status-translated { background: rgba(59, 130, 246, 0.08); color: #3b82f6; }
+.status-review { background: rgba(245, 158, 11, 0.08); color: #d97706; }
+.status-signed { background: rgba(16, 185, 129, 0.08); color: #059669; }
+.status-final { background: rgba(16, 185, 129, 0.15); color: #047857; }
+
+.docs-status-arrow {
+    color: #d1d5db;
+    padding: 0 0.5rem;
+    font-size: 1rem;
+}
+
+/* Sequence Diagram */
+.docs-sequence {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+}
+
+.docs-seq-step {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.docs-seq-step:last-child {
+    border-bottom: none;
+}
+
+.docs-seq-num {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.docs-seq-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+}
+
+.docs-seq-actor {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #667eea;
+    min-width: 48px;
+}
+
+.docs-seq-action {
+    font-size: 0.88rem;
+    color: #4b5563;
+    line-height: 1.5;
+}
+
+.docs-seq-action code {
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.82em;
+    background: #f3f4f6;
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+    color: #667eea;
+}
+
+/* Annotation Grid */
+.docs-annotation-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin: 1rem 0 1.5rem;
+}
+
+.docs-annotation {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.docs-annotation code {
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.82rem;
+    color: #8b5cf6;
+    font-weight: 500;
+    display: block;
+    margin-bottom: 0.35rem;
+}
+
+.docs-annotation p {
+    color: #6b7280;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* Docs H4 */
+.docs-h4 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1a1f36;
+    margin: 1.75rem 0 0.75rem;
+}
+
+/* Process Diagram - Blazor + Node.js */
+.docs-process-diagram {
+    display: flex;
+    gap: 0;
+    align-items: stretch;
+    margin-bottom: 1.5rem;
+}
+
+.docs-process-col {
+    flex: 1;
+    display: flex;
+}
+
+.docs-process-box {
+    flex: 1;
+    border-radius: 12px;
+    padding: 1.25rem;
+    border: 1.5px solid;
+}
+
+.process-blazor {
+    border-color: rgba(102, 126, 234, 0.3);
+    background: rgba(102, 126, 234, 0.03);
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.process-node {
+    border-color: rgba(16, 185, 129, 0.3);
+    background: rgba(16, 185, 129, 0.03);
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.docs-process-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 0.15rem;
+}
+
+.process-blazor .docs-process-title { color: #667eea; }
+.process-node .docs-process-title { color: #059669; }
+
+.docs-process-sub {
+    font-size: 0.72rem;
+    color: #9ca3af;
+    margin-bottom: 0.75rem;
+}
+
+.docs-process-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.docs-process-component {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+}
+
+.docs-process-component strong {
+    display: block;
+    font-size: 0.8rem;
+    color: #1a1f36;
+}
+
+.docs-process-component span {
+    font-size: 0.72rem;
+    color: #9ca3af;
+}
+
+.docs-process-connector {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0 0.25rem;
+    min-width: 80px;
+}
+
+.docs-process-pipe {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+}
+
+.docs-process-pipe-label {
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.68rem;
+    color: #9ca3af;
+    font-weight: 500;
+}
+
+.docs-process-pipe-arrow {
+    font-size: 0.75rem;
+    color: #d97706;
+    font-weight: 600;
+}
+
+/* Communication Flow */
+.docs-comm-flow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    margin: 1rem 0 1.5rem;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+}
+
+.docs-comm-step {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    max-width: 600px;
+}
+
+.docs-comm-node {
+    min-width: 100px;
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.comm-user { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
+.comm-blazor { background: rgba(102, 126, 234, 0.1); color: #667eea; }
+.comm-node { background: rgba(16, 185, 129, 0.1); color: #059669; }
+.comm-disk { background: rgba(217, 119, 6, 0.1); color: #d97706; }
+
+.docs-comm-label {
+    font-size: 0.78rem;
+    color: #6b7280;
+    line-height: 1.4;
+}
+
+.docs-comm-label code {
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.75em;
+    background: #f3f4f6;
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px;
+    color: #667eea;
+}
+
+.docs-comm-arrow {
+    color: #d1d5db;
+    font-size: 0.9rem;
+    padding: 0.2rem 0;
+    text-align: center;
+}
+
+.docs-comm-transport {
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.65rem;
+    color: #d97706;
+    font-weight: 500;
+}
+
 /* Responsive */
 @media (max-width: 640px) {
     .docs-tool-grid { grid-template-columns: 1fr; }
@@ -1744,4 +2185,11 @@ html, body {
     .docs-dataflow, .docs-summary-flow { flex-direction: column; }
     .docs-df-arrow { transform: rotate(90deg); }
     .docs-arch-boxes { flex-direction: column; }
+    .docs-annotation-grid { grid-template-columns: 1fr; }
+    .docs-status-flow { flex-direction: column; gap: 0.25rem; }
+    .docs-status-arrow { transform: rotate(90deg); }
+    .docs-process-diagram { flex-direction: column; }
+    .process-blazor { border-radius: 12px 12px 0 0; }
+    .process-node { border-radius: 0 0 12px 12px; }
+    .docs-process-connector { flex-direction: row; min-width: auto; padding: 0.25rem 0; }
 }

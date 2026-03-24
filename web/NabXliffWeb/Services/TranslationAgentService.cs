@@ -176,35 +176,47 @@ public class TranslationAgentService
             sw.ElapsedMilliseconds, chunkCount);
     }
 
-    public async Task<AIAgent> CreateChatAgentAsync(string? targetLanguage = null)
+    public async Task<AIAgent> CreateChatAgentAsync(string? targetLanguage = null, string? xlfFilePath = null)
     {
-        _logger.LogInformation("[Agent] CreateChatAgentAsync(targetLanguage={Lang})", targetLanguage ?? "(auto)");
+        _logger.LogInformation("[Agent] CreateChatAgentAsync(targetLanguage={Lang}, xlfFilePath={Xlf})",
+            targetLanguage ?? "(auto)", xlfFilePath ?? "(none)");
 
         var mcpTools = await _mcpBridge.GetToolsAsync();
-        var systemPrompt = BuildChatSystemPrompt(targetLanguage);
+        var systemPrompt = BuildChatSystemPrompt(targetLanguage, xlfFilePath);
         var agent = CreateAgent(systemPrompt, mcpTools);
 
         _logger.LogInformation("[Agent] Chat agent created with {ToolCount} MCP tools", mcpTools.Count);
         return agent;
     }
 
-    private static string BuildChatSystemPrompt(string? targetLanguage)
+    private static string BuildChatSystemPrompt(string? targetLanguage, string? xlfFilePath)
     {
         var lang = targetLanguage ?? "the target language of the XLF file";
+        var fileContext = !string.IsNullOrEmpty(xlfFilePath)
+            ? $"""
+
+            IMPORTANT - Current translation file context:
+            - XLF file path: {xlfFilePath}
+            - Target language: {lang}
+            Always use this file path when calling MCP tools that require a filePath parameter.
+            The user has already selected this file in the setup wizard - do NOT ask them for the file path.
+            """
+            : "";
+
         return $"""
             You are an expert translation assistant for Microsoft Dynamics 365 Business Central AL extensions.
             You have access to MCP tools for managing XLIFF translation files.
 
             The MCP server has already been initialized with the user's AL app folder.
-
+            {fileContext}
             Available capabilities via MCP tools:
-            - getTextsToTranslate: Get untranslated texts from an XLF file
+            - getTextsToTranslate: Get untranslated texts from an XLF file (use filePath above)
             - getTranslatedTextsByState: Get translated texts filtered by state (needs-review, translated, final, signed-off)
             - getTextsByKeyword: Search source/target texts by keyword or regex
             - getTranslatedTextsMap: Get a map of source->target translations
-            - getGlossaryTerms: Get glossary terminology for consistent translations
-            - saveTranslatedTexts: Save translations to the XLF file
-            - refreshXlf: Refresh/sync XLF file with latest AL code changes
+            - getGlossaryTerms: Get glossary terminology for consistent translations (use targetLanguageCode: "{lang}")
+            - saveTranslatedTexts: Save translations to the XLF file (use filePath above)
+            - refreshXlf: Refresh/sync XLF file with latest AL code changes (use filePath above)
             - createLanguageXlf: Create a new XLF file for a target language
 
             Translation rules:
@@ -216,9 +228,9 @@ public class TranslationAgentService
             6. The target language is: {lang}
 
             When the user asks you to translate, you should:
-            1. First fetch the texts using the appropriate tool
+            1. First fetch the texts using the appropriate tool with the filePath provided above
             2. Translate them
-            3. Save them using saveTranslatedTexts
+            3. Save them using saveTranslatedTexts with the same filePath
             4. Report what you did
 
             Be conversational and helpful. Show the user what you're doing.

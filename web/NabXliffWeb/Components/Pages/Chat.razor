@@ -155,7 +155,7 @@
             try
             {
                 Logger.LogInformation("[Chat] Creating chat agent and session...");
-                agent = await AgentService.CreateChatAgentAsync(Session.TargetLanguage);
+                agent = await AgentService.CreateChatAgentAsync(Session.TargetLanguage, Session.XlfFilePath);
                 session = await agent.CreateSessionAsync();
                 Logger.LogInformation("[Chat] Agent and session created successfully");
             }

@@ -52,3 +52,8 @@ public record TextsByKeywordResult(
     List<TranslatedTextWithState> Texts,
     int TotalCount
 );
+
+public record CreateLanguageXlfResult(
+    [property: JsonPropertyName("numberOfMatches")] int NumberOfMatches,
+    [property: JsonPropertyName("targetXlfFilepath")] string TargetXlfFilepath
+);

@@ -422,6 +422,623 @@
         </div>
     }
 
+    @* ===== Section: MCP Deep Dive ===== *@
+    @if (activeTab == "mcp")
+    {
+        <div class="docs-section">
+            <div class="docs-section-label">05 &mdash; MCP Server i dybden</div>
+            <h2 class="docs-section-title">Hvordan MCP-serveren virker i praksis</h2>
+            <p class="docs-section-desc">
+                MCP (Model Context Protocol) er en &aring;ben standard der lader AI-modeller kalde v&aelig;rkt&oslash;jer p&aring; din maskine.
+                NAB AL Tools' MCP-server giver AI'en direkte adgang til dine XLIFF-filer &mdash; men p&aring; en struktureret og sikker m&aring;de.
+            </p>
+
+            @* ─── Hvad er MCP? ─── *@
+            <h3 class="docs-h3">Hvad er MCP helt konkret?</h3>
+            <div class="docs-explainer">
+                <p>
+                    T&aelig;nk p&aring; MCP som en <strong>API-kontrakt mellem en AI og dit v&aelig;rkt&oslash;j</strong>.
+                    I stedet for at AI'en f&aring;r en r&aring; fil og g&aelig;tter p&aring; formatet, eksponerer MCP-serveren
+                    pr&aelig;cise funktioner med definerede input/output. AI'en kalder funktionen, f&aring;r struktureret data tilbage,
+                    og kan handle intelligent p&aring; det.
+                </p>
+                <p style="margin-top: 0.5rem;">
+                    Det er som forskellen p&aring; at give nogen en r&aring; database-dump vs. at give dem en REST API med dokumentation.
+                </p>
+            </div>
+
+            @* ─── Opstart flow ─── *@
+            <h3 class="docs-h3">S&aring;dan startes MCP-serveren</h3>
+            <p class="docs-section-desc" style="margin-bottom: 1rem;">
+                Serveren startes som en <strong>Node.js-proces</strong> der kommunikerer via <strong>stdio</strong> (standard input/output).
+                AI-klienten (f.eks. Claude Desktop) starter processen og sender/modtager JSON-beskeder.
+            </p>
+
+            <div class="docs-code-block">
+                <div class="docs-code-title">Start MCP-serveren (3 m&aring;der)</div>
+                <pre><code><span class="cc"># Via npx (ingen installation)</span>
+<span class="cf">npx</span> <span class="cs">@@nabsolutions/nab-al-tools-mcp</span>
+
+<span class="cc"># Eller global installation</span>
+<span class="cf">npm</span> install -g <span class="cs">@@nabsolutions/nab-al-tools-mcp</span>
+<span class="cf">nab-al-tools-mcp</span>
+
+<span class="cc"># Eller direkte fra VS Code-udvidelsen</span>
+<span class="cf">node</span> <span class="cs">dist/mcp/server.js</span></code></pre>
+            </div>
+
+            <div class="docs-dataflow" style="flex-direction: column; gap: 0.6rem; align-items: stretch;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div class="docs-df-node df-blue" style="min-width: 160px;">
+                        <div class="docs-df-label">AI-klient</div>
+                        <div class="docs-df-sub">Claude / Copilot</div>
+                    </div>
+                    <div class="docs-df-arrow">&#8596;</div>
+                    <div style="flex: 1; font-size: 0.82rem; color: #6b7280;">
+                        <strong style="color: #1a1f36;">stdio transport</strong> &mdash; JSON-beskeder over stdin/stdout.
+                        Serveren logger til stderr s&aring; stdout forbliver ren til protokollen.
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div class="docs-df-node df-purple" style="min-width: 160px;">
+                        <div class="docs-df-label">MCP Server</div>
+                        <div class="docs-df-sub">Node.js-proces</div>
+                    </div>
+                    <div class="docs-df-arrow">&#8596;</div>
+                    <div style="flex: 1; font-size: 0.82rem; color: #6b7280;">
+                        <strong style="color: #1a1f36;">Filsystem</strong> &mdash; L&aelig;ser og skriver .xlf-filer,
+                        app.json, glossarer direkte p&aring; disk.
+                    </div>
+                </div>
+            </div>
+
+            @* ─── Web UI + MCP ─── *@
+            <h3 class="docs-h3">Denne Web UI og MCP-serveren</h3>
+            <p class="docs-section-desc" style="margin-bottom: 1rem;">
+                N&aring;r du bruger denne Blazor web-app, sker der noget smart bag kulisserne:
+                Blazor-appen <strong>starter selv en Node.js MCP-server som child-process</strong> n&aring;r du trykker "Connect".
+                Der k&oslash;rer alts&aring; <em>ingen</em> MCP-server i forvejen &mdash; den oprettes on-demand.
+            </p>
+
+            <div class="docs-process-diagram">
+                <div class="docs-process-col">
+                    <div class="docs-process-box process-blazor">
+                        <div class="docs-process-title">Blazor App (C#)</div>
+                        <div class="docs-process-sub">dotnet run &bull; http://localhost:5000</div>
+                        <div class="docs-process-inner">
+                            <div class="docs-process-component">
+                                <strong>McpBridgeService</strong>
+                                <span>Forbinder til MCP via StdioClientTransport</span>
+                            </div>
+                            <div class="docs-process-component">
+                                <strong>TranslationAgentService</strong>
+                                <span>Opretter AI-agent med MCP-tools</span>
+                            </div>
+                            <div class="docs-process-component">
+                                <strong>SessionStateService</strong>
+                                <span>Husker valgt fil, sprog, indstillinger</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="docs-process-connector">
+                    <div class="docs-process-pipe">
+                        <div class="docs-process-pipe-label">stdin</div>
+                        <div class="docs-process-pipe-arrow">&darr; JSON-kald</div>
+                    </div>
+                    <div class="docs-process-pipe">
+                        <div class="docs-process-pipe-arrow">&uarr; JSON-svar</div>
+                        <div class="docs-process-pipe-label">stdout</div>
+                    </div>
+                </div>
+
+                <div class="docs-process-col">
+                    <div class="docs-process-box process-node">
+                        <div class="docs-process-title">Node.js MCP Server</div>
+                        <div class="docs-process-sub">child process &bull; npx nab-al-tools-mcp</div>
+                        <div class="docs-process-inner">
+                            <div class="docs-process-component">
+                                <strong>9 registrerede tools</strong>
+                                <span>initialize, getTextsToTranslate, save...</span>
+                            </div>
+                            <div class="docs-process-component">
+                                <strong>Global state</strong>
+                                <span>appFolderPath, settings, g.xlf-sti</span>
+                            </div>
+                            <div class="docs-process-component">
+                                <strong>Filsystem-adgang</strong>
+                                <span>L&aelig;ser/skriver .xlf, app.json, glossar</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h4 class="docs-h4">Hvad sker der trin for trin?</h4>
+            <div class="docs-sequence">
+                <div class="docs-seq-step">
+                    <div class="docs-seq-num">1</div>
+                    <div class="docs-seq-content">
+                        <div class="docs-seq-actor">Bruger</div>
+                        <div class="docs-seq-action">Starter Blazor-appen med <code>dotnet run</code>. Ingen MCP-server k&oslash;rer endnu.</div>
+                    </div>
+                </div>
+                <div class="docs-seq-step">
+                    <div class="docs-seq-num">2</div>
+                    <div class="docs-seq-content">
+                        <div class="docs-seq-actor">Bruger</div>
+                        <div class="docs-seq-action">Indtaster app-sti og trykker <strong>"Connect"</strong> p&aring; Setup-siden.</div>
+                    </div>
+                </div>
+                <div class="docs-seq-step">
+                    <div class="docs-seq-num">3</div>
+                    <div class="docs-seq-content">
+                        <div class="docs-seq-actor">Blazor</div>
+                        <div class="docs-seq-action"><code>McpBridgeService.ConnectAsync()</code> starter en <strong>ny Node.js child-process</strong>: <code>npx -y @@nabsolutions/nab-al-tools-mcp</code></div>
+                    </div>
+                </div>
+                <div class="docs-seq-step">
+                    <div class="docs-seq-num">4</div>
+                    <div class="docs-seq-content">
+                        <div class="docs-seq-actor">Blazor</div>
+                        <div class="docs-seq-action">Sender <code>initialize</code> tool-kald med app-stien over <strong>stdin</strong>. Node.js loader app.json, finder g.xlf, gemmer state.</div>
+                    </div>
+                </div>
+                <div class="docs-seq-step">
+                    <div class="docs-seq-num">5</div>
+                    <div class="docs-seq-content">
+                        <div class="docs-seq-actor">Bruger</div>
+                        <div class="docs-seq-action">V&aelig;lger sprogfil og g&aring;r til Chat/Translate/Review. Alle tool-kald bruger den k&oslash;rende Node.js-proces.</div>
+                    </div>
+                </div>
+                <div class="docs-seq-step">
+                    <div class="docs-seq-num">6</div>
+                    <div class="docs-seq-content">
+                        <div class="docs-seq-actor">Chat</div>
+                        <div class="docs-seq-action">AI-agenten (Azure OpenAI) f&aring;r MCP-tools som funktioner. N&aring;r den kalder f.eks. <code>getTextsToTranslate</code>, g&aring;r kaldet: AI &rarr; Blazor &rarr; stdin &rarr; Node.js &rarr; disk.</div>
+                    </div>
+                </div>
+                <div class="docs-seq-step">
+                    <div class="docs-seq-num">7</div>
+                    <div class="docs-seq-content">
+                        <div class="docs-seq-actor">Blazor</div>
+                        <div class="docs-seq-action">N&aring;r appen lukkes, kalder <code>DisposeAsync()</code> som dr&aelig;ber Node.js child-processen.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="docs-callout">
+                <strong>N&oslash;glepunkt:</strong> Node.js MCP-serveren er <em>ikke</em> en separat service du skal starte manuelt.
+                Blazor-appen h&aring;ndterer hele livscyklussen: opstart, kommunikation og nedlukning.
+                Konfigurationen i <code>appsettings.json</code> bestemmer hvilken kommando der bruges
+                (default: <code>npx -y @@nabsolutions/nab-al-tools-mcp</code>).
+            </div>
+
+            <h4 class="docs-h4">Fuld kommunikationsvej for et tool-kald</h4>
+            <div class="docs-comm-flow">
+                <div class="docs-comm-step">
+                    <div class="docs-comm-node comm-user">Bruger / AI</div>
+                    <div class="docs-comm-label">"Overs&aelig;t 10 tekster"</div>
+                </div>
+                <div class="docs-comm-arrow">&darr;</div>
+                <div class="docs-comm-step">
+                    <div class="docs-comm-node comm-blazor">Blazor C#</div>
+                    <div class="docs-comm-label">McpBridge.CallToolAsync("getTextsToTranslate", {filePath, offset, limit})</div>
+                </div>
+                <div class="docs-comm-arrow">&darr; <span class="docs-comm-transport">stdin (JSON)</span></div>
+                <div class="docs-comm-step">
+                    <div class="docs-comm-node comm-node">Node.js MCP</div>
+                    <div class="docs-comm-label">XliffToolsCore.getTextsToTranslateCore() &rarr; Xliff.fromFileSync()</div>
+                </div>
+                <div class="docs-comm-arrow">&darr;</div>
+                <div class="docs-comm-step">
+                    <div class="docs-comm-node comm-disk">Disk</div>
+                    <div class="docs-comm-label">L&aelig;ser MyApp.da-DK.xlf, filtrerer uoversatte units</div>
+                </div>
+                <div class="docs-comm-arrow">&uarr; <span class="docs-comm-transport">stdout (JSON)</span></div>
+                <div class="docs-comm-step">
+                    <div class="docs-comm-node comm-blazor">Blazor C#</div>
+                    <div class="docs-comm-label">Deserialiserer JSON til UntranslatedTextsResult</div>
+                </div>
+                <div class="docs-comm-arrow">&uarr;</div>
+                <div class="docs-comm-step">
+                    <div class="docs-comm-node comm-user">Bruger / AI</div>
+                    <div class="docs-comm-label">Viser tekster i UI eller sender til AI for overs&aelig;ttelse</div>
+                </div>
+            </div>
+
+            @* ─── Initialization Guard ─── *@
+            <h3 class="docs-h3">Initialisering &mdash; det f&oslash;rste der sker</h3>
+            <p class="docs-section-desc" style="margin-bottom: 1rem;">
+                F&oslash;r noget andet kan ske, <strong>skal</strong> AI'en kalde <code>initialize</code>-v&aelig;rkt&oslash;jet.
+                Det fortæller serveren hvilket AL-projekt den skal arbejde med.
+            </p>
+
+            <div class="docs-flow">
+                <div class="docs-flow-step">
+                    <div class="docs-flow-num"><span>1</span></div>
+                    <div class="docs-flow-line"></div>
+                    <div class="docs-flow-body">
+                        <h4>AI kalder <code>initialize</code></h4>
+                        <p>Sender stien til AL-app-mappen (der hvor <code>app.json</code> ligger) og eventuelt en workspace-fil.</p>
+                        <div class="docs-code-block" style="margin-top: 0.75rem;">
+                            <div class="docs-code-title">Eksempel: initialize-kald</div>
+                            <pre><code>{
+  <span class="cf">"appFolderPath"</span>: <span class="cs">"C:/dev/MyApp"</span>,
+  <span class="cf">"workspaceFilePath"</span>: <span class="cs">"C:/dev/MyApp.code-workspace"</span>
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="docs-flow-step">
+                    <div class="docs-flow-num"><span>2</span></div>
+                    <div class="docs-flow-line"></div>
+                    <div class="docs-flow-body">
+                        <h4>Serveren validerer og indl&aelig;ser</h4>
+                        <p>Loader <code>app.json</code> (manifest), projektindstillinger, og finder den genererede <code>g.xlf</code>-masterfil i <code>Translations/</code>-mappen. Fejler hvis filen ikke findes (projektet skal v&aelig;re bygget f&oslash;rst).</p>
+                    </div>
+                </div>
+
+                <div class="docs-flow-step">
+                    <div class="docs-flow-num"><span>3</span></div>
+                    <div class="docs-flow-line last"></div>
+                    <div class="docs-flow-body">
+                        <h4>Global state gemmes</h4>
+                        <p>Serveren gemmer indstillinger, manifest og g.xlf-sti i hukommelsen. Alle efterf&oslash;lgende tool-kald genbruger denne state. Det er derfor initialisering kun skal ske &eacute;n gang per session.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="docs-callout">
+                <strong>Guard pattern:</strong> Hvert tool (undtagen <code>initialize</code>) starter med at tjekke:
+                "Er serveren initialiseret?" Hvis nej, returneres en fejl der fort&aelig;ller AI'en at den skal kalde <code>initialize</code> f&oslash;rst.
+                Det sikrer at AI'en aldrig kan lave fejl ved at kalde v&aelig;rkt&oslash;jer uden kontekst.
+            </div>
+
+            @* ─── Hvert tool i detaljer ─── *@
+            <h3 class="docs-h3">Hvert v&aelig;rkt&oslash;j i detaljer</h3>
+            <p class="docs-section-desc" style="margin-bottom: 1.5rem;">
+                Her er pr&aelig;cis hvad hvert v&aelig;rkt&oslash;j g&oslash;r, hvilke parametre det tager, og hvad det returnerer.
+                Alle input valideres med <strong>Zod-skemaer</strong> (runtime type-tjek).
+            </p>
+
+            @* Tool details - expandable *@
+            @foreach (var tool in mcpTools)
+            {
+                <div class="docs-tool-detail @(expandedTool == tool.Name ? "expanded" : "")"
+                     @onclick="() => ToggleTool(tool.Name)">
+                    <div class="docs-tool-detail-header">
+                        <div>
+                            <div class="docs-tool-name" style="margin-bottom: 0.15rem;">@tool.Name</div>
+                            <div class="docs-tool-subtitle">@tool.Subtitle</div>
+                        </div>
+                        <div class="docs-tool-badges">
+                            @if (tool.ReadOnly)
+                            {
+                                <span class="docs-tag tag-file">read-only</span>
+                            }
+                            else
+                            {
+                                <span class="docs-tag tag-state">skriver filer</span>
+                            }
+                            @if (tool.RequiresNetwork)
+                            {
+                                <span class="docs-tag tag-ai">netv&aelig;rk</span>
+                            }
+                        </div>
+                        <span class="docs-expand-icon">@(expandedTool == tool.Name ? "\u25B2" : "\u25BC")</span>
+                    </div>
+
+                    @if (expandedTool == tool.Name)
+                    {
+                        <div class="docs-tool-detail-body" @onclick:stopPropagation="true">
+                            <div class="docs-tool-explain">@((MarkupString)tool.Description)</div>
+
+                            <div class="docs-two-col" style="margin-top: 1rem; gap: 0.75rem;">
+                                <div>
+                                    <div class="docs-mini-label">Parametre (input)</div>
+                                    <div class="docs-code-block" style="margin: 0.5rem 0;">
+                                        <pre><code>@((MarkupString)tool.InputExample)</code></pre>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="docs-mini-label">Returnerer (output)</div>
+                                    <div class="docs-code-block" style="margin: 0.5rem 0;">
+                                        <pre><code>@((MarkupString)tool.OutputExample)</code></pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(tool.PracticalNote))
+                            {
+                                <div class="docs-callout" style="margin-top: 0.75rem; margin-bottom: 0;">
+                                    @((MarkupString)tool.PracticalNote)
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+
+            @* ─── Paginering ─── *@
+            <h3 class="docs-h3">Paginering &mdash; hvorfor og hvordan</h3>
+            <div class="docs-explainer">
+                <p>
+                    En XLIFF-fil kan indeholde <strong>tusindvis</strong> af overs&aelig;ttelsesenheder. Hvis AI'en fik dem alle p&aring; &eacute;n gang,
+                    ville den l&oslash;be t&oslash;r for kontekstvindue. Derfor bruger alle l&aelig;se-v&aelig;rkt&oslash;jer <code>offset</code> og <code>limit</code>:
+                </p>
+            </div>
+
+            <div class="docs-code-block" style="margin: 1rem 0;">
+                <div class="docs-code-title">Pagineringseksempel: hent 50 ad gangen</div>
+                <pre><code><span class="cc">// F&oslash;rste batch</span>
+{ <span class="cf">"offset"</span>: <span class="cs">0</span>, <span class="cf">"limit"</span>: <span class="cs">50</span> }  <span class="cc">&#8594; tekst 1-50</span>
+
+<span class="cc">// N&aelig;ste batch</span>
+{ <span class="cf">"offset"</span>: <span class="cs">50</span>, <span class="cf">"limit"</span>: <span class="cs">50</span> } <span class="cc">&#8594; tekst 51-100</span>
+
+<span class="cc">// Alle p&aring; &eacute;n gang</span>
+{ <span class="cf">"offset"</span>: <span class="cs">0</span>, <span class="cf">"limit"</span>: <span class="cs">0</span> }  <span class="cc">&#8594; alle tekster</span></code></pre>
+            </div>
+
+            <div class="docs-callout">
+                <strong>Vigtigt:</strong> Efter at AI'en kalder <code>saveTranslatedTexts</code>, skal den nulstille paginering til <code>offset: 0</code>.
+                Grunden er at listen af uoversatte tekster &aelig;ndrer sig n&aring;r overs&aelig;ttelser gemmes (og propageres), s&aring; de gamle offsets passer ikke l&aelig;ngere.
+            </div>
+
+            @* ─── Propagering ─── *@
+            <h3 class="docs-h3">Propagering &mdash; den smarte genvej</h3>
+            <p class="docs-section-desc" style="margin-bottom: 1rem;">
+                N&aring;r AI'en gemmer en overs&aelig;ttelse, sker der mere end bare at &eacute;n tekst opdateres.
+                <strong>Propagering</strong> betyder at alle andre steder med n&oslash;jagtig samme kildetekst automatisk f&aring;r den samme overs&aelig;ttelse.
+            </p>
+
+            <div class="docs-dataflow" style="flex-direction: column; gap: 0.5rem; align-items: stretch;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div class="docs-df-node df-blue" style="min-width: 200px;">
+                        <div class="docs-df-label">AI gemmer</div>
+                        <div class="docs-df-sub">"Amount" &#8594; "Bel&oslash;b"</div>
+                    </div>
+                    <div class="docs-df-arrow">&#8594;</div>
+                    <div class="docs-df-node df-purple" style="min-width: 200px;">
+                        <div class="docs-df-label">saveTranslatedTexts</div>
+                        <div class="docs-df-sub">opdaterer unit A</div>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.75rem; padding-left: 3rem;">
+                    <div class="docs-df-arrow">&#8600;</div>
+                    <div class="docs-df-node df-green" style="min-width: 280px;">
+                        <div class="docs-df-label">Propagering</div>
+                        <div class="docs-df-sub">Finder unit B, C, D med samme kilde &#8594; kopierer "Bel&oslash;b"</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="docs-explainer" style="margin-top: 1rem;">
+                <p>
+                    Propagering sker <strong>kun</strong> for status <code>translated</code>, <code>final</code> og <code>signed-off</code>.
+                    Hvis AI'en s&aelig;tter status til <code>needs-review-translation</code>, propageres der <strong>ikke</strong> &mdash;
+                    fordi det ville sprede usikre overs&aelig;ttelser.
+                </p>
+            </div>
+
+            @* ─── Status system ─── *@
+            <h3 class="docs-h3">Status-systemet</h3>
+            <p class="docs-section-desc" style="margin-bottom: 1rem;">
+                Hver overs&aelig;ttelse har en <strong>status</strong> der f&oslash;lger XLIFF-standarden. Det giver et klart workflow fra uoversat til godkendt.
+            </p>
+
+            <div class="docs-status-flow">
+                <div class="docs-status-node status-untranslated">
+                    <strong>needs-translation</strong>
+                    <span>Ny eller &aelig;ndret tekst</span>
+                </div>
+                <div class="docs-status-arrow">&#8594;</div>
+                <div class="docs-status-node status-translated">
+                    <strong>translated</strong>
+                    <span>Overs&aelig;ttelse tilf&oslash;jet</span>
+                </div>
+                <div class="docs-status-arrow">&#8594;</div>
+                <div class="docs-status-node status-review">
+                    <strong>needs-review</strong>
+                    <span>Kilde &aelig;ndret, tjek n&oslash;dvendigt</span>
+                </div>
+                <div class="docs-status-arrow">&#8594;</div>
+                <div class="docs-status-node status-signed">
+                    <strong>signed-off</strong>
+                    <span>Gennemg&aring;et og godkendt</span>
+                </div>
+                <div class="docs-status-arrow">&#8594;</div>
+                <div class="docs-status-node status-final">
+                    <strong>final</strong>
+                    <span>L&aring;st, klar til produktion</span>
+                </div>
+            </div>
+
+            @* ─── Kodearkitektur ─── *@
+            <h3 class="docs-h3">Kode-arkitekturen bag MCP-serveren</h3>
+            <p class="docs-section-desc" style="margin-bottom: 1rem;">
+                MCP-serveren og VS Code-udvidelsen deler kernelogik via <code>XliffToolsCore.ts</code>.
+                Det sikrer at begge altid giver identiske resultater.
+            </p>
+
+            <div class="docs-arch">
+                <div class="docs-arch-layer">
+                    <div class="docs-arch-label label-purple">MCP-vejen</div>
+                    <div class="docs-arch-boxes">
+                        <div class="docs-arch-box">
+                            <h5>server.ts</h5>
+                            <p>Registrerer 9 tools med Zod-skemaer. H&aring;ndterer stdio-transport, global state og fejlh&aring;ndtering.</p>
+                        </div>
+                        <div class="docs-arch-box">
+                            <h5>CliSettingsLoader.ts</h5>
+                            <p>L&aelig;ser indstillinger fra .code-workspace og app.json. Ingen VS Code API.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="docs-arch-connector">
+                    <div class="docs-arch-arrow-line"></div>
+                    <span>&#9660; kalder</span>
+                </div>
+
+                <div class="docs-arch-layer">
+                    <div class="docs-arch-label label-blue">Delt kerne (vscode-fri)</div>
+                    <div class="docs-arch-boxes">
+                        <div class="docs-arch-box">
+                            <h5>XliffToolsCore.ts</h5>
+                            <p>8 kernefunktioner: getTextsToTranslateCore, saveTranslatedTextsCore, getTextsByKeywordCore osv. All forretningslogik lever her.</p>
+                        </div>
+                        <div class="docs-arch-box">
+                            <h5>GlossaryCore.ts</h5>
+                            <p>Glossar-logik: indl&aelig;s TSV, merge lokalt + indbygget glossar, spr&aring;gkolonne-opslag.</p>
+                        </div>
+                        <div class="docs-arch-box">
+                            <h5>ToolHelpers.ts</h5>
+                            <p>Hj&aelig;lpefunktioner: find app-mappe fra XLF-sti, load manifest og indstillinger.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="docs-arch-connector">
+                    <div class="docs-arch-arrow-line"></div>
+                    <span>&#9650; kalder ogs&aring;</span>
+                </div>
+
+                <div class="docs-arch-layer">
+                    <div class="docs-arch-label label-green">VS Code-vejen</div>
+                    <div class="docs-arch-boxes">
+                        <div class="docs-arch-box">
+                            <h5>ChatTools/*.ts</h5>
+                            <p>10 tool-klasser der implementerer VS Codes LanguageModelTool-interface. Kalder de <em>samme</em> Core-funktioner.</p>
+                        </div>
+                        <div class="docs-arch-box">
+                            <h5>SettingsLoader.ts</h5>
+                            <p>L&aelig;ser indstillinger fra VS Codes settings API. Kun tilg&aelig;ngelig inde i VS Code.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="docs-callout" style="margin-top: 1.5rem;">
+                <strong>N&oslash;glen til kvalitet:</strong> Fordi b&aring;de MCP og VS Code kalder <em>XliffToolsCore.ts</em>,
+                er der kun &eacute;t sted at rette bugs og &eacute;t sted at teste. Et fix i kernen fikser det b&aring;de for Claude Desktop-brugere
+                og VS Code-brugere p&aring; &eacute;n gang.
+            </div>
+
+            @* ─── Praktisk eksempel ─── *@
+            <h3 class="docs-h3">Praktisk eksempel: AI overs&aelig;tter en app</h3>
+            <p class="docs-section-desc" style="margin-bottom: 1rem;">
+                Her er den typiske sekvens af tool-kald n&aring;r en AI-agent overs&aelig;tter en hel app:
+            </p>
+
+            <div class="docs-sequence">
+                <div class="docs-seq-step">
+                    <div class="docs-seq-num">1</div>
+                    <div class="docs-seq-content">
+                        <div class="docs-seq-actor">AI</div>
+                        <div class="docs-seq-action">Kalder <code>initialize</code> med app-stien</div>
+                    </div>
+                </div>
+                <div class="docs-seq-step">
+                    <div class="docs-seq-num">2</div>
+                    <div class="docs-seq-content">
+                        <div class="docs-seq-actor">AI</div>
+                        <div class="docs-seq-action">Kalder <code>getGlossaryTerms</code> for at l&aelig;re terminologien</div>
+                    </div>
+                </div>
+                <div class="docs-seq-step">
+                    <div class="docs-seq-num">3</div>
+                    <div class="docs-seq-content">
+                        <div class="docs-seq-actor">AI</div>
+                        <div class="docs-seq-action">Kalder <code>getTextsToTranslate</code> med offset=0, limit=50</div>
+                    </div>
+                </div>
+                <div class="docs-seq-step">
+                    <div class="docs-seq-num">4</div>
+                    <div class="docs-seq-content">
+                        <div class="docs-seq-actor">Server</div>
+                        <div class="docs-seq-action">Returnerer 50 tekster med kontekst, maxL&aelig;ngde og kommentarer</div>
+                    </div>
+                </div>
+                <div class="docs-seq-step">
+                    <div class="docs-seq-num">5</div>
+                    <div class="docs-seq-content">
+                        <div class="docs-seq-actor">AI</div>
+                        <div class="docs-seq-action">Overs&aelig;tter og kalder <code>saveTranslatedTexts</code> med 50 overs&aelig;ttelser</div>
+                    </div>
+                </div>
+                <div class="docs-seq-step">
+                    <div class="docs-seq-num">6</div>
+                    <div class="docs-seq-content">
+                        <div class="docs-seq-actor">Server</div>
+                        <div class="docs-seq-action">Gemmer + propagerer. Returnerer "87 units opdateret" (50 direkte + 37 propageret)</div>
+                    </div>
+                </div>
+                <div class="docs-seq-step">
+                    <div class="docs-seq-num">7</div>
+                    <div class="docs-seq-content">
+                        <div class="docs-seq-actor">AI</div>
+                        <div class="docs-seq-action">Nulstiller offset til 0 og kalder <code>getTextsToTranslate</code> igen &#8594; gentager til alt er oversat</div>
+                    </div>
+                </div>
+            </div>
+
+            @* ─── Tool annotations ─── *@
+            <h3 class="docs-h3">Tool-annotationer &mdash; metadata til AI'en</h3>
+            <div class="docs-explainer">
+                <p>
+                    Hvert v&aelig;rkt&oslash;j har <strong>annotationer</strong> der hj&aelig;lper AI'en med at tr&aelig;ffe bedre beslutninger:
+                </p>
+            </div>
+
+            <div class="docs-annotation-grid">
+                <div class="docs-annotation">
+                    <code>readOnlyHint</code>
+                    <p>Fortæller om v&aelig;rkt&oslash;jet kun l&aelig;ser eller ogs&aring; &aelig;ndrer filer. AI'en kan kalde read-only tools uden bekymring.</p>
+                </div>
+                <div class="docs-annotation">
+                    <code>destructiveHint</code>
+                    <p>Signalerer at v&aelig;rkt&oslash;jet overskriver eksisterende data. AI'en b&oslash;r bekr&aelig;fte med brugeren f&oslash;rst.</p>
+                </div>
+                <div class="docs-annotation">
+                    <code>idempotentHint</code>
+                    <p>Kan v&aelig;rkt&oslash;jet k&oslash;res flere gange med samme resultat? Vigtig for retry-logik.</p>
+                </div>
+                <div class="docs-annotation">
+                    <code>openWorldHint</code>
+                    <p>Kr&aelig;ver v&aelig;rkt&oslash;jet netv&aelig;rksadgang? Kun <code>createLanguageXlf</code> (n&aring;r base-app matching er sl&aring;et til).</p>
+                </div>
+            </div>
+
+            @* ─── Fejlhåndtering ─── *@
+            <h3 class="docs-h3">Fejlh&aring;ndtering</h3>
+            <div class="docs-explainer">
+                <p>
+                    Alle v&aelig;rkt&oslash;jer bruger en standardiseret <code>handleMcpToolError()</code> der fanger fejl og returnerer
+                    klare, actionable beskeder. AI'en f&aring;r aldrig en crash &mdash; den f&aring;r altid en forst&aring;elig fejl den kan handle p&aring;.
+                </p>
+            </div>
+
+            <div class="docs-code-block" style="margin-top: 0.75rem;">
+                <div class="docs-code-title">Eksempel: typiske fejlbeskeder</div>
+                <pre><code><span class="cc">// Ikke initialiseret</span>
+<span class="cs">"MCP server not initialized. Call 'initialize' first."</span>
+
+<span class="cc">// Ugyldig input (Zod-validering)</span>
+<span class="cs">"Input validation error: filePath: Required"</span>
+
+<span class="cc">// Fil ikke fundet</span>
+<span class="cs">"The file at path C:/dev/MyApp/x.xlf does not exist"</span>
+
+<span class="cc">// Ugyldig regex</span>
+<span class="cs">"Invalid regular expression: /[unclosed/"</span></code></pre>
+            </div>
+        </div>
+    }
+
     @* ===== Section: Det smarte ===== *@
     @if (activeTab == "smart")
     {
@@ -506,6 +1123,12 @@
 
 @code {
     private string activeTab = "overview";
+    private string? expandedTool;
+
+    private void ToggleTool(string name)
+    {
+        expandedTool = expandedTool == name ? null : name;
+    }
 
     private record TabDef(string Id, string Label, string Icon);
 
@@ -515,6 +1138,97 @@
         new("workflow", "Workflow", "\U0001f504"),
         new("architecture", "Arkitektur", "\U0001f3d7\ufe0f"),
         new("ai", "AI-integration", "\U0001f916"),
+        new("mcp", "MCP Server", "\U0001f50c"),
         new("smart", "Det smarte", "\U0001f4a1"),
+    ];
+
+    private record McpToolDef(
+        string Name,
+        string Subtitle,
+        string Description,
+        string InputExample,
+        string OutputExample,
+        bool ReadOnly,
+        bool RequiresNetwork = false,
+        string? PracticalNote = null);
+
+    private readonly McpToolDef[] mcpTools =
+    [
+        new("initialize",
+            "P\u00e5kr\u00e6vet f\u00f8rst \u2014 fort\u00e6ller serveren hvilket projekt den skal arbejde med",
+            "Loader <code>app.json</code>, projektindstillinger og finder <code>g.xlf</code>-masterfilen. Gemmer alt i global state s\u00e5 de \u00f8vrige tools kan bruge det. Kan genkaldes for at skifte til et andet projekt.",
+            "{\n  <span class=\"cf\">\"appFolderPath\"</span>: <span class=\"cs\">\"C:/dev/MyApp\"</span>,\n  <span class=\"cf\">\"workspaceFilePath\"</span>: <span class=\"cs\">\"C:/dev/My.code-workspace\"</span>\n}",
+            "<span class=\"cs\">\"Initialized with g.xlf at:</span>\n<span class=\"cs\"> C:/dev/MyApp/Translations/</span>\n<span class=\"cs\"> MyApp.g.xlf\"</span>",
+            true,
+            PracticalNote: "<strong>Fejler hvis:</strong> <code>app.json</code> mangler, TranslationFile-feature ikke er sl\u00e5et til, eller <code>g.xlf</code> ikke findes (byg projektet f\u00f8rst)."),
+
+        new("getTextsToTranslate",
+            "Henter uoversatte tekster med fuld kontekst",
+            "Filtrerer alle translation units der mangler overs\u00e6ttelse. For hver tekst f\u00e5r AI'en: unikt ID, kildetekst, kontekst (\"Table Customer - Field Name\"), maxl\u00e6ngde og kommentarer. Underst\u00f8tter alternativt kildesprog.",
+            "{\n  <span class=\"cf\">\"filePath\"</span>: <span class=\"cs\">\"...MyApp.da-DK.xlf\"</span>,\n  <span class=\"cf\">\"offset\"</span>: <span class=\"cs\">0</span>,\n  <span class=\"cf\">\"limit\"</span>: <span class=\"cs\">50</span>\n}",
+            "{\n  <span class=\"cf\">\"texts\"</span>: [{\n    <span class=\"cf\">\"id\"</span>: <span class=\"cs\">\"Table50-Field1-Caption\"</span>,\n    <span class=\"cf\">\"sourceText\"</span>: <span class=\"cs\">\"Amount\"</span>,\n    <span class=\"cf\">\"context\"</span>: <span class=\"cs\">\"Table Sales - Field...\"</span>,\n    <span class=\"cf\">\"maxLength\"</span>: <span class=\"cs\">30</span>\n  }],\n  <span class=\"cf\">\"totalUntranslatedCount\"</span>: <span class=\"cs\">247</span>\n}",
+            true,
+            PracticalNote: "<strong>Tip:</strong> Nulstil altid <code>offset</code> til 0 efter <code>saveTranslatedTexts</code>, da listen \u00e6ndrer sig n\u00e5r overs\u00e6ttelser gemmes og propageres."),
+
+        new("saveTranslatedTexts",
+            "Gemmer overs\u00e6ttelser med automatisk propagering",
+            "Opdaterer target-tekst og status for en batch af translation units. <strong>Propagerer</strong> automatisk til alle andre units med identisk kildetekst. Returnerer det samlede antal opdaterede units (inkl. propagerede).",
+            "{\n  <span class=\"cf\">\"filePath\"</span>: <span class=\"cs\">\"...MyApp.da-DK.xlf\"</span>,\n  <span class=\"cf\">\"translations\"</span>: [{\n    <span class=\"cf\">\"id\"</span>: <span class=\"cs\">\"Table50-Field1-Caption\"</span>,\n    <span class=\"cf\">\"targetText\"</span>: <span class=\"cs\">\"Bel\\u00f8b\"</span>,\n    <span class=\"cf\">\"targetState\"</span>: <span class=\"cs\">\"translated\"</span>\n  }]\n}",
+            "<span class=\"cs\">\"Saved 1 translation(s).</span>\n<span class=\"cs\"> Including propagation:</span>\n<span class=\"cs\"> 4 units total updated.\"</span>",
+            false,
+            PracticalNote: "<strong>Propagering styres af status:</strong> <code>translated</code>, <code>final</code> og <code>signed-off</code> propagerer. <code>needs-review-translation</code> propagerer <strong>ikke</strong> (for at undg\u00e5 spredning af usikre overs\u00e6ttelser)."),
+
+        new("getTranslatedTextsMap",
+            "Viser alle overs\u00e6ttelsesvariationer grupperet efter kildetekst",
+            "Returnerer et map: kildetekst \u2192 alle de forskellige overs\u00e6ttelser der bruges. Perfekt til at finde inkonsistenser \u2014 f.eks. hvis \"Total\" b\u00e5de er oversat til \"Total\" og \"I alt\".",
+            "{\n  <span class=\"cf\">\"filePath\"</span>: <span class=\"cs\">\"...MyApp.da-DK.xlf\"</span>,\n  <span class=\"cf\">\"offset\"</span>: <span class=\"cs\">0</span>,\n  <span class=\"cf\">\"limit\"</span>: <span class=\"cs\">100</span>\n}",
+            "[{\n  <span class=\"cf\">\"sourceText\"</span>: <span class=\"cs\">\"Total\"</span>,\n  <span class=\"cf\">\"targetTexts\"</span>: [\n    <span class=\"cs\">\"Total\"</span>,\n    <span class=\"cs\">\"I alt\"</span>\n  ]\n}]",
+            true),
+
+        new("getTranslatedTextsByState",
+            "Filtrerer overs\u00e6ttelser efter status",
+            "Henter overs\u00e6ttelser filtreret p\u00e5 state (translated, needs-review, final, signed-off). Kan ogs\u00e5 filtrere p\u00e5 exact kildetekst. Inkluderer review-\u00e5rsag hvis relevant.",
+            "{\n  <span class=\"cf\">\"filePath\"</span>: <span class=\"cs\">\"...MyApp.da-DK.xlf\"</span>,\n  <span class=\"cf\">\"translationStateFilter\"</span>: <span class=\"cs\">\"needs-review\"</span>,\n  <span class=\"cf\">\"offset\"</span>: <span class=\"cs\">0</span>, <span class=\"cf\">\"limit\"</span>: <span class=\"cs\">50</span>\n}",
+            "[{\n  <span class=\"cf\">\"id\"</span>: <span class=\"cs\">\"Table50-Field2\"</span>,\n  <span class=\"cf\">\"sourceText\"</span>: <span class=\"cs\">\"Name\"</span>,\n  <span class=\"cf\">\"targetText\"</span>: <span class=\"cs\">\"Navn\"</span>,\n  <span class=\"cf\">\"translationState\"</span>: <span class=\"cs\">\"needs-review\"</span>,\n  <span class=\"cf\">\"reviewReason\"</span>: <span class=\"cs\">\"Source changed\"</span>\n}]",
+            true),
+
+        new("getTextsByKeyword",
+            "S\u00f8g i kilde- eller m\u00e5ltekster med regex",
+            "S\u00f8ger efter et keyword (eller regex-m\u00f8nster) i enten kildetekst eller overs\u00e6ttelse. Underst\u00f8tter case-sensitive/insensitive. Perfekt til at finde alle steder et bestemt ord optr\u00e6der.",
+            "{\n  <span class=\"cf\">\"filePath\"</span>: <span class=\"cs\">\"...MyApp.da-DK.xlf\"</span>,\n  <span class=\"cf\">\"keyword\"</span>: <span class=\"cs\">\"[Cc]ustomer\"</span>,\n  <span class=\"cf\">\"isRegex\"</span>: <span class=\"cs\">true</span>,\n  <span class=\"cf\">\"searchInTarget\"</span>: <span class=\"cs\">false</span>,\n  <span class=\"cf\">\"offset\"</span>: <span class=\"cs\">0</span>, <span class=\"cf\">\"limit\"</span>: <span class=\"cs\">20</span>\n}",
+            "[{\n  <span class=\"cf\">\"id\"</span>: <span class=\"cs\">\"Page22-Caption\"</span>,\n  <span class=\"cf\">\"sourceText\"</span>: <span class=\"cs\">\"Customer Card\"</span>,\n  <span class=\"cf\">\"targetText\"</span>: <span class=\"cs\">\"Kundekort\"</span>,\n  <span class=\"cf\">\"context\"</span>: <span class=\"cs\">\"Page Customer Card\"</span>\n}]",
+            true),
+
+        new("getGlossaryTerms",
+            "Henter terminologi fra BC-glossar + lokalt glossar",
+            "Returnerer termpar (kilde \u2192 m\u00e5l) fra Microsofts indbyggede Business Central-glossar. Kan merges med et lokalt projektglossar i TSV-format. Lokale termer har prioritet ved konflikter.",
+            "{\n  <span class=\"cf\">\"targetLanguageCode\"</span>: <span class=\"cs\">\"da-DK\"</span>,\n  <span class=\"cf\">\"sourceLanguageCode\"</span>: <span class=\"cs\">\"en-US\"</span>,\n  <span class=\"cf\">\"localGlossaryPath\"</span>: <span class=\"cs\">\"C:/dev/glossary.tsv\"</span>\n}",
+            "[{\n  <span class=\"cf\">\"source\"</span>: <span class=\"cs\">\"Customer\"</span>,\n  <span class=\"cf\">\"target\"</span>: <span class=\"cs\">\"Debitor\"</span>,\n  <span class=\"cf\">\"description\"</span>: <span class=\"cs\">\"BC standard term\"</span>\n}]",
+            true,
+            PracticalNote: "<strong>TSV-format:</strong> F\u00f8rste linje er headers med sprogkoder (en-US, da-DK, sv-SE...), data er tab-separeret. Sidste kolonne er valgfri Description."),
+
+        new("refreshXlf",
+            "Synkroniserer sprogfiler med g.xlf",
+            "Identisk med VS Code-kommandoen \"NAB: Refresh XLF files from g.xlf\". Tilf\u00f8jer nye tekster, fjerner slettede, markerer \u00e6ndrede til review. AI'en kan kalde dette under en session for at holde filerne opdateret.",
+            "{\n  <span class=\"cf\">\"filePath\"</span>: <span class=\"cs\">\"...MyApp.da-DK.xlf\"</span>\n}",
+            "<span class=\"cs\">\"Refresh completed:</span>\n<span class=\"cs\"> 3 added, 1 removed,</span>\n<span class=\"cs\"> 2 marked for review\"</span>",
+            false,
+            PracticalNote: "<strong>Idempotent:</strong> Kan k\u00f8res flere gange uden problemer. Hvis filerne allerede er synkroniserede, \u00e6ndres intet."),
+
+        new("createLanguageXlf",
+            "Opretter ny sprogfil med valgfri base-app matching",
+            "Opretter en ny XLF-fil for et m\u00e5lsprog. Kan downloade og matche mod Microsofts officielle base-app overs\u00e6ttelser, s\u00e5 du starter med en masse f\u00e6rdige overs\u00e6ttelser i stedet for en tom fil.",
+            "{\n  <span class=\"cf\">\"targetLanguageCode\"</span>: <span class=\"cs\">\"sv-SE\"</span>,\n  <span class=\"cf\">\"matchBaseAppTranslation\"</span>: <span class=\"cs\">true</span>\n}",
+            "{\n  <span class=\"cf\">\"numberOfMatches\"</span>: <span class=\"cs\">142</span>,\n  <span class=\"cf\">\"targetXlfFilepath\"</span>:\n    <span class=\"cs\">\"...MyApp.sv-SE.xlf\"</span>\n}",
+            false,
+            RequiresNetwork: true,
+            PracticalNote: "<strong>Kr\u00e6ver internet</strong> n\u00e5r <code>matchBaseAppTranslation: true</code>. Downloader fra Microsofts servere. Uden matching oprettes en tom fil."),
+
+        new("buildAlPackage",
+            "Bygger AL-projektet og returnerer kompileringsfejl",
+            "K\u00f8rer AL-compileren og returnerer detaljerede fejlbeskeder med kontekst (fil, linje, fejlkode). Giver AI'en mulighed for at debugge build-problemer.",
+            "{ }  <span class=\"cc\">// ingen parametre</span>",
+            "{\n  <span class=\"cf\">\"success\"</span>: <span class=\"cs\">false</span>,\n  <span class=\"cf\">\"diagnostics\"</span>: [{\n    <span class=\"cf\">\"file\"</span>: <span class=\"cs\">\"Tab50.al\"</span>,\n    <span class=\"cf\">\"line\"</span>: <span class=\"cs\">42</span>,\n    <span class=\"cf\">\"code\"</span>: <span class=\"cs\">\"AL0118\"</span>,\n    <span class=\"cf\">\"message\"</span>: <span class=\"cs\">\"...\"</span>\n  }]\n}",
+            true),
     ];
 }
