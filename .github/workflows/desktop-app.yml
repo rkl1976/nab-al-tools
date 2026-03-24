@@ -111,6 +111,9 @@ jobs:
             }
           }
 
+      - name: Copy install script
+        run: Copy-Item web/landing/install-cert.ps1 ./install-cert.ps1
+
       - name: Upload portable ZIP artifact
         uses: actions/upload-artifact@v4
         with:
@@ -173,6 +176,9 @@ jobs:
           name: NabXliffApp-installer
         continue-on-error: true
 
+      - name: Copy install script
+        run: cp web/landing/install-cert.ps1 ./install-cert.ps1
+
       - name: Get version
         id: version
         run: echo "version=$(date +'%Y.%m.%d')" >> $GITHUB_OUTPUT
@@ -191,11 +197,20 @@ jobs:
 
             | File | Description |
             |------|-------------|
-            | `NabXliffApp-win-x64.msix` | **Installer** — double-click to install with Start Menu shortcut and clean uninstall |
             | `NabXliffApp-win-x64.zip` | **Portable** — extract and run, no installation needed |
+            | `NabXliffApp-win-x64.msix` | **Installer** — Start Menu shortcut, clean uninstall (requires certificate) |
+            | `install-cert.ps1` | **Certificate installer** — run first before installing MSIX |
 
-            > **Note:** The MSIX installer uses a self-signed certificate. Windows will show a warning — click "Install" to proceed.
-            > To install, you may need to first install the certificate: right-click the .msix → Properties → Digital Signatures → select signer → Details → View Certificate → Install Certificate → Local Machine → Trusted People.
+            ### MSIX Installation (2 steps)
+            The MSIX uses a self-signed certificate. Install the certificate first:
+            1. Download both `install-cert.ps1` and `NabXliffApp-win-x64.msix`
+            2. Open **PowerShell as Administrator** and run:
+               ```powershell
+               .\install-cert.ps1 -MsixPath .\NabXliffApp-win-x64.msix
+               ```
+            3. Double-click `NabXliffApp-win-x64.msix` to install
+
+            > Or use the **portable ZIP** — just extract and run, no certificate needed.
 
             ### Prerequisites
             - Windows 10/11
@@ -212,6 +227,7 @@ jobs:
           files: |
             NabXliffApp-win-x64.zip
             NabXliffApp-win-x64.msix
+            install-cert.ps1
           fail_on_unmatched_files: false
           draft: false
           prerelease: false
