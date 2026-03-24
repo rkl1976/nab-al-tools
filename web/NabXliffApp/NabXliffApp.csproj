@@ -7,10 +7,16 @@
     <WindowsPackageType>None</WindowsPackageType>
     <ApplicationTitle>NAB XLIFF</ApplicationTitle>
     <ApplicationId>com.nabsolutions.nabxliff</ApplicationId>
+    <ApplicationDisplayVersion>1.0.0</ApplicationDisplayVersion>
+    <ApplicationVersion>1</ApplicationVersion>
     <RootNamespace>NabXliffApp</RootNamespace>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.19041.0</SupportedOSPlatformVersion>
+
+    <!-- MSIX publisher identity (must match certificate CN) -->
+    <Authors>NAB Solutions</Authors>
+    <Description>XLIFF translation management for Business Central AL projects with AI integration</Description>
   </PropertyGroup>
 
   <ItemGroup>

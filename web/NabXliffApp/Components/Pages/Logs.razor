@@ -1,0 +1,195 @@
+@page "/logs"
+@inject AppLogService LogService
+@inject McpBridgeService McpBridge
+@implements IDisposable
+
+<PageTitle>Logs - NAB XLIFF</PageTitle>
+
+<div class="page-header">
+    <h1>Logs</h1>
+    <p class="subtitle">Real-time app, MCP, and AI communication log</p>
+</div>
+
+<div class="toolbar">
+    <div class="toolbar-left">
+        <div class="state-filter-bar">
+            <button class="btn-filter @(filter == "all" ? "active" : "")" @onclick="FilterAll">All</button>
+            <button class="btn-filter @(filter == "mcp" ? "active" : "")" @onclick="FilterMcp">MCP</button>
+            <button class="btn-filter @(filter == "agent" ? "active" : "")" @onclick="FilterAgent">AI Agent</button>
+            <button class="btn-filter @(filter == "app" ? "active" : "")" @onclick="FilterApp">App</button>
+            <button class="btn-filter @(filter == "error" ? "active" : "")" @onclick="FilterError">Errors</button>
+        </div>
+    </div>
+    <div class="toolbar-right">
+        <label class="checkbox-label">
+            <input type="checkbox" @bind="autoScroll" />
+            Auto-scroll
+        </label>
+        <span class="result-count">@filteredEntries.Count entries</span>
+        <button class="btn btn-secondary btn-sm" @onclick="ClearLogs">Clear</button>
+    </div>
+</div>
+
+@* ── Diagnostics panel ── *@
+<div class="log-diagnostics">
+    <div class="log-diag-item">
+        <span class="log-diag-label">MCP</span>
+        <span class="status-badge @(McpBridge.IsConnected ? "connected" : "disconnected")">
+            @(McpBridge.IsConnected ? "Connected" : "Not connected")
+        </span>
+    </div>
+    <div class="log-diag-item">
+        <span class="log-diag-label">Initialized</span>
+        <span class="status-badge @(McpBridge.IsInitialized ? "connected" : "disconnected")">
+            @(McpBridge.IsInitialized ? "Yes" : "No")
+        </span>
+    </div>
+    <div class="log-diag-item">
+        <span class="log-diag-label">Node.js</span>
+        <span class="status-badge @(nodeAvailable == true ? "connected" : nodeAvailable == false ? "disconnected" : "")">
+            @(nodeAvailable == true ? "Available" : nodeAvailable == false ? "Not found" : "Unknown")
+        </span>
+    </div>
+    <div class="log-diag-item">
+        <span class="log-diag-label">npx</span>
+        <span class="status-badge @(npxAvailable == true ? "connected" : npxAvailable == false ? "disconnected" : "")">
+            @(npxAvailable == true ? "Available" : npxAvailable == false ? "Not found" : "Unknown")
+        </span>
+    </div>
+    <button class="btn btn-outline btn-sm" @onclick="CheckPrerequisitesAsync">Check Prerequisites</button>
+</div>
+
+@* ── Log entries ── *@
+<div class="log-container" @ref="logContainer">
+    @if (filteredEntries.Count == 0)
+    {
+        <div class="empty-state" style="padding: 2rem;">
+            <p>No log entries yet. Connect to an AL project to see MCP communication.</p>
+        </div>
+    }
+    else
+    {
+        @foreach (var entry in filteredEntries)
+        {
+            <div class="log-entry log-@entry.Level.ToString().ToLower()">
+                <span class="log-time">@entry.Timestamp.ToString("HH:mm:ss.fff")</span>
+                <span class="log-level-badge @LevelClass(entry.Level)">@LevelLabel(entry.Level)</span>
+                <span class="log-category">@entry.Category</span>
+                <span class="log-message">@entry.Message</span>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private string filter = "all";
+    private bool autoScroll = true;
+    private bool? nodeAvailable;
+    private bool? npxAvailable;
+    private ElementReference logContainer;
+    private List<LogEntry> filteredEntries = [];
+
+    protected override void OnInitialized()
+    {
+        LogService.OnNewEntry += HandleNewEntry;
+        ApplyFilter();
+    }
+
+    private void HandleNewEntry()
+    {
+        InvokeAsync(() =>
+        {
+            ApplyFilter();
+            StateHasChanged();
+        });
+    }
+
+    private void FilterAll() { filter = "all"; ApplyFilter(); }
+    private void FilterMcp() { filter = "mcp"; ApplyFilter(); }
+    private void FilterAgent() { filter = "agent"; ApplyFilter(); }
+    private void FilterApp() { filter = "app"; ApplyFilter(); }
+    private void FilterError() { filter = "error"; ApplyFilter(); }
+
+    private void ApplyFilter()
+    {
+        var all = LogService.Entries;
+        filteredEntries = filter switch
+        {
+            "mcp" => all.Where(e => e.Category.Contains("Mcp", StringComparison.OrdinalIgnoreCase) ||
+                                     e.Message.Contains("[MCP]", StringComparison.OrdinalIgnoreCase)).ToList(),
+            "agent" => all.Where(e => e.Category.Contains("Agent", StringComparison.OrdinalIgnoreCase) ||
+                                       e.Category.Contains("Translation", StringComparison.OrdinalIgnoreCase)).ToList(),
+            "app" => all.Where(e => !e.Category.Contains("Mcp", StringComparison.OrdinalIgnoreCase) &&
+                                     !e.Category.Contains("Agent", StringComparison.OrdinalIgnoreCase) &&
+                                     !e.Category.Contains("Translation", StringComparison.OrdinalIgnoreCase)).ToList(),
+            "error" => all.Where(e => e.Level >= LogLevel.Error).ToList(),
+            _ => all.ToList()
+        };
+    }
+
+    private void ClearLogs()
+    {
+        LogService.Clear();
+        filteredEntries = [];
+    }
+
+    private async Task CheckPrerequisitesAsync()
+    {
+        nodeAvailable = await CheckCommandAsync("node", "--version");
+        npxAvailable = await CheckCommandAsync("npx", "--version");
+        StateHasChanged();
+
+        if (nodeAvailable == false)
+            LogService.Add(LogLevel.Error, "Diagnostics", "node not found in PATH. Install Node.js 20+ from https://nodejs.org/");
+        if (npxAvailable == false)
+            LogService.Add(LogLevel.Error, "Diagnostics", "npx not found in PATH. It should be included with Node.js.");
+        if (nodeAvailable == true && npxAvailable == true)
+            LogService.Add(LogLevel.Information, "Diagnostics", "All prerequisites OK. Node.js and npx are available.");
+    }
+
+    private static async Task<bool> CheckCommandAsync(string command, string args)
+    {
+        try
+        {
+            var psi = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = command,
+                Arguments = args,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            using var process = System.Diagnostics.Process.Start(psi);
+            if (process is null) return false;
+            await process.WaitForExitAsync();
+            return process.ExitCode == 0;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static string LevelClass(LogLevel level) => level switch
+    {
+        LogLevel.Error or LogLevel.Critical => "level-error",
+        LogLevel.Warning => "level-warn",
+        LogLevel.Information => "level-info",
+        _ => "level-debug"
+    };
+
+    private static string LevelLabel(LogLevel level) => level switch
+    {
+        LogLevel.Error or LogLevel.Critical => "ERR",
+        LogLevel.Warning => "WRN",
+        LogLevel.Information => "INF",
+        LogLevel.Debug => "DBG",
+        _ => "TRC"
+    };
+
+    public void Dispose()
+    {
+        LogService.OnNewEntry -= HandleNewEntry;
+    }
+}

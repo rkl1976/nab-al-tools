@@ -32,6 +32,11 @@ public static class MauiProgram
         // Store path so Settings page can find it
         builder.Services.AddSingleton(new AppPaths(userConfigDir, userConfigFile));
 
+        // In-app log viewer
+        var appLog = new AppLogService();
+        builder.Services.AddSingleton(appLog);
+        builder.Logging.AddProvider(new AppLogProvider(appLog));
+
         builder.Services.AddSingleton<McpBridgeService>();
         builder.Services.AddScoped<TranslationAgentService>();
         builder.Services.AddScoped<SessionStateService>();

@@ -59,8 +59,13 @@ public sealed class McpBridgeService : IAsyncDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[MCP] Failed to connect to MCP server");
-            throw;
+            _logger.LogError("[MCP] Failed to connect to MCP server: {Error}", ex.Message);
+            _logger.LogError("[MCP] Troubleshooting: Is Node.js installed? Is 'npx' in your PATH?");
+            _logger.LogError("[MCP] Try running in a terminal: npx -y @nabsolutions/nab-al-tools-mcp");
+            if (ex.InnerException is not null)
+                _logger.LogError("[MCP] Inner exception: {Inner}", ex.InnerException.Message);
+            throw new InvalidOperationException(
+                $"Could not start MCP server. Is Node.js installed and 'npx' in your PATH?\n\nDetails: {ex.Message}", ex);
         }
         finally
         {

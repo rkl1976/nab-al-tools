@@ -1243,6 +1243,99 @@ html, body {
     padding-top: 0.35rem;
 }
 
+/* ===== Logs Page ===== */
+.log-diagnostics {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 0.75rem 1rem;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+}
+
+.log-diag-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.82rem;
+}
+
+.log-diag-label {
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.log-container {
+    background: #1a1f36;
+    border-radius: 10px;
+    padding: 0.5rem;
+    max-height: calc(100vh - 340px);
+    overflow-y: auto;
+    font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    line-height: 1.6;
+}
+
+.log-entry {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    align-items: flex-start;
+}
+
+.log-entry:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.log-entry.log-error, .log-entry.log-critical {
+    background: rgba(239, 68, 68, 0.08);
+}
+
+.log-entry.log-warning {
+    background: rgba(245, 158, 11, 0.06);
+}
+
+.log-time {
+    color: #484f58;
+    flex-shrink: 0;
+    min-width: 85px;
+}
+
+.log-level-badge {
+    flex-shrink: 0;
+    min-width: 32px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.68rem;
+    padding: 0.05rem 0.3rem;
+    border-radius: 3px;
+}
+
+.level-info { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+.level-warn { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+.level-error { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+.level-debug { background: rgba(255, 255, 255, 0.06); color: #6b7280; }
+
+.log-category {
+    color: #a78bfa;
+    flex-shrink: 0;
+    min-width: 100px;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.log-message {
+    color: #c9d1d9;
+    word-break: break-word;
+    white-space: pre-wrap;
+}
+
 /* ===== Blazor Error ===== */
 .blazor-error-boundary {
     background: #dc2626;
