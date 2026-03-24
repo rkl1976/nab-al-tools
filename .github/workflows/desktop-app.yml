@@ -7,12 +7,12 @@ on:
         description: 'Create GitHub Release with MAUI app'
         type: boolean
         default: true
-  push:
-    branches: [main]
-    paths:
-      - 'web/NabXliffApp/**'
-      - 'web/landing/**'
-      - '.github/workflows/desktop-app.yml'
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - 'web/NabXliffApp/**'
+  #     - 'web/landing/**'
+  #     - '.github/workflows/desktop-app.yml'        
 
 permissions:
   contents: write
