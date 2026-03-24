@@ -1,0 +1,1819 @@
+@page "/docs"
+
+<PageTitle>Documentation - NAB XLIFF</PageTitle>
+
+<div class="docs-page">
+
+    @* ===== Hero ===== *@
+    <div class="docs-hero">
+        <div class="docs-hero-badge">Open Source &middot; VS Code Extension</div>
+        <h1>NAB AL Tools</h1>
+        <p class="docs-hero-sub">
+            Et komplet v&aelig;rkt&oslash;jss&aelig;t til XLIFF-overs&aelig;ttelser, dokumentationsgenerering og
+            AI-assisteret udvikling i Microsoft Dynamics 365 Business Central.
+        </p>
+        <div class="docs-hero-stats">
+            <div class="docs-stat">
+                <span class="docs-stat-num">100+</span>
+                <span class="docs-stat-label">Kommandoer</span>
+            </div>
+            <div class="docs-stat">
+                <span class="docs-stat-num">10</span>
+                <span class="docs-stat-label">AI-v&aelig;rkt&oslash;jer</span>
+            </div>
+            <div class="docs-stat">
+                <span class="docs-stat-num">90+</span>
+                <span class="docs-stat-label">Indstillinger</span>
+            </div>
+            <div class="docs-stat">
+                <span class="docs-stat-num">3</span>
+                <span class="docs-stat-label">Indgangspunkter</span>
+            </div>
+        </div>
+    </div>
+
+    @* ===== Navigation Tabs ===== *@
+    <div class="docs-tabs">
+        @foreach (var tab in tabs)
+        {
+            <button class="docs-tab @(activeTab == tab.Id ? "active" : "")"
+                    @onclick="() => activeTab = tab.Id">
+                <span class="docs-tab-icon">@tab.Icon</span>
+                @tab.Label
+            </button>
+        }
+    </div>
+
+    @* ===== Section: Oversigt ===== *@
+    @if (activeTab == "overview")
+    {
+        <div class="docs-section">
+            <div class="docs-section-label">01 &mdash; Hvad er det?</div>
+            <h2 class="docs-section-title">Et komplet v&aelig;rkt&oslash;jss&aelig;t til AL-udvikling</h2>
+            <p class="docs-section-desc">
+                N&aring;r du udvikler apps til Microsoft Dynamics 365 Business Central, skriver du kode i sproget <strong>AL</strong>.
+                Al brugertekst (knapper, felter, menuer) skal overs&aelig;ttes til flere sprog via <strong>XLIFF-filer</strong>
+                &mdash; XML-baserede overs&aelig;ttelsesfiler. NAB AL Tools g&oslash;r hele denne proces automatisk, fejlfri og AI-assisteret.
+            </p>
+
+            <div class="docs-card-grid">
+                <div class="docs-feature-card">
+                    <div class="docs-card-icon">&#9997;</div>
+                    <h3>XLIFF-overs&aelig;ttelse</h3>
+                    <p>Synkroniserer automatisk overs&aelig;ttelsesfiler med din kode. Find uoversatte tekster, match mod Microsofts egne overs&aelig;ttelser, og h&aring;ndter status for hver enkelt overs&aelig;ttelse.</p>
+                </div>
+                <div class="docs-feature-card">
+                    <div class="docs-card-icon accent-blue">&#129302;</div>
+                    <h3>AI-integration</h3>
+                    <p>Registrerer v&aelig;rkt&oslash;jer direkte i VS Codes Language Model API og via MCP-serveren. AI-agenter kan overs&aelig;tte, gennemg&aring; og vedligeholde dine overs&aelig;ttelser autonomt.</p>
+                </div>
+                <div class="docs-feature-card">
+                    <div class="docs-card-icon accent-green">&#128196;</div>
+                    <h3>Dokumentation</h3>
+                    <p>Genererer automatisk markdown-dokumentation for alle AL-objekter med YAML-front matter, indholdsfortegnelser og tooltip-reference.</p>
+                </div>
+                <div class="docs-feature-card">
+                    <div class="docs-card-icon accent-red">&#9881;</div>
+                    <h3>CLI &amp; CI/CD</h3>
+                    <p>Standalone kommandolinje-v&aelig;rkt&oslash;jer der k&oslash;rer uden VS Code. Perfekt til build-pipelines, GitHub Actions og automatiserede valideringer.</p>
+                </div>
+                <div class="docs-feature-card">
+                    <div class="docs-card-icon accent-purple">&#128274;</div>
+                    <h3>Permission Sets</h3>
+                    <p>Autogenerer tilladelsess&aelig;t for alle AL-objekter og konverter mellem formater. Slut med manuelt vedligehold af tilladelser.</p>
+                </div>
+                <div class="docs-feature-card">
+                    <div class="docs-card-icon accent-blue">&#128203;</div>
+                    <h3>CSV Import/Eksport</h3>
+                    <p>Eksporter overs&aelig;ttelser til CSV for ekstern review, og importer dem direkte tilbage med korrekt statusmapping.</p>
+                </div>
+            </div>
+
+            @* XLIFF Forklaring *@
+            <h2 class="docs-section-title" style="margin-top: 3rem;">Hvad er XLIFF?</h2>
+            <p class="docs-section-desc">
+                XLIFF (XML Localisation Interchange File Format) er en international standard for udveksling af overs&aelig;ttelsesdata.
+                I Business Central-verdenen fungerer det s&aring;dan her:
+            </p>
+
+            <div class="docs-dataflow">
+                <div class="docs-df-node df-blue">
+                    <div class="docs-df-label">AL-kode</div>
+                    <div class="docs-df-sub">din kildekode</div>
+                </div>
+                <div class="docs-df-arrow">&#8594;</div>
+                <div class="docs-df-node df-gold">
+                    <div class="docs-df-label">g.xlf</div>
+                    <div class="docs-df-sub">auto-genereret</div>
+                </div>
+                <div class="docs-df-arrow">&#8594;</div>
+                <div class="docs-df-node df-purple">
+                    <div class="docs-df-label">NAB AL Tools</div>
+                    <div class="docs-df-sub">synkroniserer</div>
+                </div>
+                <div class="docs-df-arrow">&#8594;</div>
+                <div class="docs-df-node df-green">
+                    <div class="docs-df-label">da-DK.xlf</div>
+                    <div class="docs-df-sub">oversat fil</div>
+                </div>
+            </div>
+
+            <div class="docs-callout">
+                <strong>Problemet uden v&aelig;rkt&oslash;jet:</strong> Hver gang du &aelig;ndrer en tekst i din AL-kode, skal alle sprogfiler
+                opdateres manuelt. Nye tekster skal tilf&oslash;jes, slettede fjernes, og &aelig;ndrede markeres til genovers&aelig;ttelse.
+                Med 15+ sprog og tusindvis af tekster er det en fejlbombe. NAB AL Tools g&oslash;r det hele automatisk med &eacute;n kommando.
+            </div>
+
+            <div class="docs-code-block">
+                <div class="docs-code-title">Eksempel: AL-kode med overs&aelig;ttelig tekst</div>
+                <pre><code><span class="ck">table</span> 50100 <span class="cs">"Customer Rating"</span>
+{
+    <span class="ck">fields</span>
+    {
+        <span class="ck">field</span>(1; <span class="cs">"Rating"</span>; <span class="ck">Integer</span>)
+        {
+            <span class="cf">Caption</span> = <span class="cs">'Customer Rating'</span>;
+            <span class="cc">// &#8593; Denne tekst ender i g.xlf og skal overs&aelig;ttes</span>
+        }
+    }
+}</code></pre>
+            </div>
+        </div>
+    }
+
+    @* ===== Section: Workflow ===== *@
+    @if (activeTab == "workflow")
+    {
+        <div class="docs-section">
+            <div class="docs-section-label">02 &mdash; Workflow</div>
+            <h2 class="docs-section-title">Fra kode til f&aelig;rdig overs&aelig;ttelse</h2>
+            <p class="docs-section-desc">
+                Hele overs&aelig;ttelsesprocessen f&oslash;lger et klart flow med definerede trin.
+            </p>
+
+            <div class="docs-flow">
+                <div class="docs-flow-step">
+                    <div class="docs-flow-num"><span>1</span></div>
+                    <div class="docs-flow-line"></div>
+                    <div class="docs-flow-body">
+                        <h4>Skriv AL-kode</h4>
+                        <p>Du udvikler tabeller, sider, rapporter og codeunits. Alle brugervendte tekster (Captions, ToolTips, Labels) markeres automatisk som overs&aelig;ttelige af compileren.</p>
+                        <div class="docs-tags">
+                            <span class="docs-tag tag-file">.al filer</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="docs-flow-step">
+                    <div class="docs-flow-num"><span>2</span></div>
+                    <div class="docs-flow-line"></div>
+                    <div class="docs-flow-body">
+                        <h4>Byg projektet</h4>
+                        <p>AL-compileren genererer <strong>g.xlf</strong> &mdash; en masterfil der indeholder alle overs&aelig;ttelige tekster med unikke ID'er og kontekstinformation.</p>
+                        <div class="docs-tags">
+                            <span class="docs-tag tag-file">g.xlf</span>
+                            <span class="docs-tag tag-cmd">Ctrl+Shift+B</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="docs-flow-step">
+                    <div class="docs-flow-num"><span>3</span></div>
+                    <div class="docs-flow-line"></div>
+                    <div class="docs-flow-body">
+                        <h4>Synkroniser sprogfiler</h4>
+                        <p><strong>NAB: Refresh XLF files from g.xlf</strong> &mdash; den vigtigste kommando. Sammenligner g.xlf med alle sprogfiler og tilf&oslash;jer nye tekster, fjerner slettede, og markerer &aelig;ndrede til genovers&aelig;ttelse.</p>
+                        <div class="docs-tags">
+                            <span class="docs-tag tag-cmd">Refresh XLF</span>
+                            <span class="docs-tag tag-file">da-DK.xlf</span>
+                            <span class="docs-tag tag-file">sv-SE.xlf</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="docs-flow-step">
+                    <div class="docs-flow-num"><span>4</span></div>
+                    <div class="docs-flow-line"></div>
+                    <div class="docs-flow-body">
+                        <h4>Overs&aelig;t</h4>
+                        <p>Nu kan du overs&aelig;tte p&aring; tre m&aring;der: <strong>Manuelt</strong> med "Find next untranslated text" (Ctrl+Alt+U), via <strong>AI-agenten</strong> der overs&aelig;tter autonomt, eller via <strong>CSV-eksport</strong> til eksterne overs&aelig;ttere.</p>
+                        <div class="docs-tags">
+                            <span class="docs-tag tag-cmd">Ctrl+Alt+U</span>
+                            <span class="docs-tag tag-ai">AI Agent</span>
+                            <span class="docs-tag tag-file">CSV</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="docs-flow-step">
+                    <div class="docs-flow-num"><span>5</span></div>
+                    <div class="docs-flow-line"></div>
+                    <div class="docs-flow-body">
+                        <h4>Match mod base-app</h4>
+                        <p>Microsoft har allerede oversat 15+ sprog til Business Centrals standardapp. NAB AL Tools kan automatisk matche dine tekster mod disse officielle overs&aelig;ttelser.</p>
+                        <div class="docs-tags">
+                            <span class="docs-tag tag-cmd">Match Base App</span>
+                            <span class="docs-tag tag-ai">Glossar</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="docs-flow-step">
+                    <div class="docs-flow-num"><span>6</span></div>
+                    <div class="docs-flow-line last"></div>
+                    <div class="docs-flow-body">
+                        <h4>Valid&eacute;r og godkend</h4>
+                        <p>S&aelig;t status p&aring; overs&aelig;ttelser og sikr kvaliteten. Find inkonsistenser med "Find multiple targets".</p>
+                        <div class="docs-tags">
+                            <span class="docs-tag tag-state">translated</span>
+                            <span class="docs-tag tag-state">signed-off</span>
+                            <span class="docs-tag tag-state">final</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @* ===== Section: Arkitektur ===== *@
+    @if (activeTab == "architecture")
+    {
+        <div class="docs-section">
+            <div class="docs-section-label">03 &mdash; Arkitektur</div>
+            <h2 class="docs-section-title">Hvordan det hele h&aelig;nger sammen</h2>
+            <p class="docs-section-desc">
+                NAB AL Tools er bygget i lag. Kernelogikken er delt mellem VS Code-udvidelsen, MCP-serveren og CLI-v&aelig;rkt&oslash;jerne
+                &mdash; s&aring; den samme gennemtestede kode driver alt.
+            </p>
+
+            @* Architecture Layers *@
+            <div class="docs-arch">
+                <div class="docs-arch-layer">
+                    <div class="docs-arch-label label-purple">Indgangspunkter &mdash; Tre veje ind</div>
+                    <div class="docs-arch-boxes">
+                        <div class="docs-arch-box">
+                            <h5>&#128268; VS Code Extension</h5>
+                            <p>100+ kommandoer, hover-overs&aelig;ttelser, Language Model Tools, webview-editorer. Kr&aelig;ver VS Code.</p>
+                        </div>
+                        <div class="docs-arch-box">
+                            <h5>&#129302; MCP Server</h5>
+                            <p>Model Context Protocol. Bruges af Claude Desktop, GitHub Copilot eller enhver MCP-klient. K&oslash;rer standalone.</p>
+                        </div>
+                        <div class="docs-arch-box">
+                            <h5>&#9000; CLI-v&aelig;rkt&oslash;jer</h5>
+                            <p>RefreshXLF og CreateDocumentation. Til CI/CD-pipelines og automatisering. Ingen UI n&oslash;dvendig.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="docs-arch-connector">
+                    <div class="docs-arch-arrow-line"></div>
+                    <span>&#9660; deler kode</span>
+                </div>
+
+                <div class="docs-arch-layer">
+                    <div class="docs-arch-label label-blue">Delt kerne &mdash; Den f&aelig;lles motor</div>
+                    <div class="docs-arch-boxes">
+                        <div class="docs-arch-box">
+                            <h5>XliffToolsCore.ts</h5>
+                            <p>F&aelig;lles implementation for alle AI-v&aelig;rkt&oslash;jer. Uafh&aelig;ngig af VS Code &mdash; kan bruges overalt.</p>
+                        </div>
+                        <div class="docs-arch-box">
+                            <h5>XliffFunctions.ts</h5>
+                            <p>1.400+ linjer kernelogik til XLIFF-manipulation: synkronisering, matching, validering.</p>
+                        </div>
+                        <div class="docs-arch-box">
+                            <h5>ALParser.ts</h5>
+                            <p>Recursive descent parser for AL-syntaks. Forst&aring;r tabeller, sider, codeunits og deres egenskaber.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="docs-arch-connector">
+                    <div class="docs-arch-arrow-line"></div>
+                    <span>&#9660; l&aelig;ser og skriver</span>
+                </div>
+
+                <div class="docs-arch-layer">
+                    <div class="docs-arch-label label-green">Data &mdash; Filerne p&aring; disken</div>
+                    <div class="docs-arch-boxes">
+                        <div class="docs-arch-box">
+                            <h5>*.al filer</h5>
+                            <p>Din AL-kildekode med Captions, ToolTips og Labels.</p>
+                        </div>
+                        <div class="docs-arch-box">
+                            <h5>g.xlf</h5>
+                            <p>Master-overs&aelig;ttelsesfilen. Genereret af AL-compileren. Sandhedskilden.</p>
+                        </div>
+                        <div class="docs-arch-box">
+                            <h5>{sprog}.xlf</h5>
+                            <p>Sprogspecifikke overs&aelig;ttelsesfiler: da-DK.xlf, sv-SE.xlf, de-DE.xlf osv.</p>
+                        </div>
+                        <div class="docs-arch-box">
+                            <h5>Glossar (TSV)</h5>
+                            <p>Projektspecifikke termer for konsistent terminologi.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="docs-callout" style="margin-top: 1.5rem;">
+                <strong>N&oslash;gleprincip:</strong> CLI-v&aelig;rkt&oslash;jer og MCP-serveren importerer <em>aldrig</em> VS Codes API.
+                De bruger kun Node.js native API'er. Det verificeres automatisk i CI/CD &mdash; s&aring; de altid kan k&oslash;re
+                selvst&aelig;ndigt uden VS Code.
+            </div>
+        </div>
+    }
+
+    @* ===== Section: AI ===== *@
+    @if (activeTab == "ai")
+    {
+        <div class="docs-section">
+            <div class="docs-section-label">04 &mdash; AI-integration</div>
+            <h2 class="docs-section-title">AI der faktisk forst&aring;r dine overs&aelig;ttelser</h2>
+            <p class="docs-section-desc">
+                NAB AL Tools eksponerer strukturerede v&aelig;rkt&oslash;jer som AI-modeller kan bruge. Det betyder at en AI-agent kan
+                l&aelig;se, overs&aelig;tte og gemme dine overs&aelig;ttelser &mdash; med fuld kontekst om hvert felt.
+            </p>
+
+            <h3 class="docs-h3">To veje til AI</h3>
+            <div class="docs-two-col">
+                <div class="docs-info-card">
+                    <div class="docs-info-icon accent-blue">&#128268;</div>
+                    <h4>VS Code Language Model API</h4>
+                    <p>V&aelig;rkt&oslash;jerne registreres direkte i VS Codes chat-interface (Copilot Chat). AI'en kan kalde dem som funktioner under en samtale.</p>
+                </div>
+                <div class="docs-info-card">
+                    <div class="docs-info-icon accent-purple">&#129302;</div>
+                    <h4>MCP Server (ekstern)</h4>
+                    <p>Samme v&aelig;rkt&oslash;jer eksponeres via Model Context Protocol. Bruges af Claude Desktop, GitHub Copilot Agent eller andre MCP-klienter.</p>
+                </div>
+            </div>
+
+            <h3 class="docs-h3">De 10 AI-v&aelig;rkt&oslash;jer</h3>
+            <div class="docs-tool-grid">
+                <div class="docs-tool-card">
+                    <div class="docs-tool-name">getTextsToTranslate</div>
+                    <p>Henter uoversatte tekster med paginering, kildesprog-kontekst, maxl&aelig;ngde og kommentarer.</p>
+                </div>
+                <div class="docs-tool-card">
+                    <div class="docs-tool-name">getTranslatedTextsMap</div>
+                    <p>Grupperer overs&aelig;ttelser efter kildetekst. Sikrer at "Customer" altid overs&aelig;ttes ens.</p>
+                </div>
+                <div class="docs-tool-card">
+                    <div class="docs-tool-name">saveTranslatedTexts</div>
+                    <p>Gemmer overs&aelig;ttelser og propagerer automatisk til alle steder med samme kildetekst.</p>
+                </div>
+                <div class="docs-tool-card">
+                    <div class="docs-tool-name">getGlossaryTerms</div>
+                    <p>Returnerer termpar fra BC-glossaret + eventuelt projektglossar for korrekt terminologi.</p>
+                </div>
+                <div class="docs-tool-card">
+                    <div class="docs-tool-name">getTextsByKeyword</div>
+                    <p>S&oslash;g i kilde- og m&aring;ltekster med regex og paginering.</p>
+                </div>
+                <div class="docs-tool-card">
+                    <div class="docs-tool-name">getTranslatedTextsByState</div>
+                    <p>Filtrer overs&aelig;ttelser efter status: needs-review, translated, final.</p>
+                </div>
+                <div class="docs-tool-card">
+                    <div class="docs-tool-name">refreshXlf</div>
+                    <p>Synkroniser XLF-filer &mdash; samme som kommandoen, men kaldt af AI.</p>
+                </div>
+                <div class="docs-tool-card">
+                    <div class="docs-tool-name">buildAlPackage</div>
+                    <p>Bygger AL-projektet og returnerer detaljerede kompileringsfejl med kontekst.</p>
+                </div>
+                <div class="docs-tool-card">
+                    <div class="docs-tool-name">createLanguageXlf</div>
+                    <p>Opretter ny sprogfil med valgfri matching mod Microsofts base-app.</p>
+                </div>
+                <div class="docs-tool-card">
+                    <div class="docs-tool-name">openFile</div>
+                    <p>&Aring;bner filer i VS Code og etablerer kontekst for de andre v&aelig;rkt&oslash;jer.</p>
+                </div>
+            </div>
+
+            <h3 class="docs-h3">AI-agentens tre tilstande</h3>
+            <div class="docs-modes">
+                <div class="docs-mode-item">
+                    <div class="docs-mode-icon accent-purple">&#9997;</div>
+                    <div>
+                        <strong>Overs&aelig;t-tilstand</strong>
+                        <p>AI'en henter uoversatte tekster batch-vis, overs&aelig;tter med glossar-kontekst, og gemmer automatisk. K&oslash;rer autonomt til alt er oversat.</p>
+                    </div>
+                </div>
+                <div class="docs-mode-item">
+                    <div class="docs-mode-icon accent-gold">&#128270;</div>
+                    <div>
+                        <strong>Review-tilstand</strong>
+                        <p>Gennemg&aring;r overs&aelig;ttelser der skal godkendes. Markerer som signed-off eller flagger problemer. Batch-baseret review.</p>
+                    </div>
+                </div>
+                <div class="docs-mode-item">
+                    <div class="docs-mode-icon accent-green">&#128214;</div>
+                    <div>
+                        <strong>Glossar-tilstand</strong>
+                        <p>Opretter og vedligeholder projektspecifikke glossarer i TSV-format for konsistent terminologi.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @* ===== Section: MCP Deep Dive ===== *@
+    @if (activeTab == "mcp")
+    {
+        <div class="docs-section">
+            <div class="docs-section-label">05 &mdash; MCP Server i dybden</div>
+            <h2 class="docs-section-title">Hvordan MCP-serveren virker i praksis</h2>
+            <p class="docs-section-desc">
+                MCP (Model Context Protocol) er en &aring;ben standard der lader AI-modeller kalde v&aelig;rkt&oslash;jer p&aring; din maskine.
+                NAB AL Tools' MCP-server giver AI'en direkte adgang til dine XLIFF-filer &mdash; men p&aring; en struktureret og sikker m&aring;de.
+            </p>
+
+            @* ─── Hvad er MCP? ─── *@
+            <h3 class="docs-h3">Hvad er MCP helt konkret?</h3>
+            <div class="docs-explainer">
+                <p>
+                    T&aelig;nk p&aring; MCP som en <strong>API-kontrakt mellem en AI og dit v&aelig;rkt&oslash;j</strong>.
+                    I stedet for at AI'en f&aring;r en r&aring; fil og g&aelig;tter p&aring; formatet, eksponerer MCP-serveren
+                    pr&aelig;cise funktioner med definerede input/output. AI'en kalder funktionen, f&aring;r struktureret data tilbage,
+                    og kan handle intelligent p&aring; det.
+                </p>
+                <p style="margin-top: 0.5rem;">
+                    Det er som forskellen p&aring; at give nogen en r&aring; database-dump vs. at give dem en REST API med dokumentation.
+                </p>
+            </div>
+
+            @* ─── Opstart flow ─── *@
+            <h3 class="docs-h3">S&aring;dan startes MCP-serveren</h3>
+            <p class="docs-section-desc" style="margin-bottom: 1rem;">
+                Serveren startes som en <strong>Node.js-proces</strong> der kommunikerer via <strong>stdio</strong> (standard input/output).
+                AI-klienten (f.eks. Claude Desktop) starter processen og sender/modtager JSON-beskeder.
+            </p>
+
+            <div class="docs-code-block">
+                <div class="docs-code-title">Start MCP-serveren (3 m&aring;der)</div>
+                <pre><code><span class="cc"># Via npx (ingen installation)</span>
+<span class="cf">npx</span> <span class="cs">@@nabsolutions/nab-al-tools-mcp</span>
+
+<span class="cc"># Eller global installation</span>
+<span class="cf">npm</span> install -g <span class="cs">@@nabsolutions/nab-al-tools-mcp</span>
+<span class="cf">nab-al-tools-mcp</span>
+
+<span class="cc"># Eller direkte fra VS Code-udvidelsen</span>
+<span class="cf">node</span> <span class="cs">dist/mcp/server.js</span></code></pre>
+            </div>
+
+            <div class="docs-dataflow" style="flex-direction: column; gap: 0.6rem; align-items: stretch;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div class="docs-df-node df-blue" style="min-width: 160px;">
+                        <div class="docs-df-label">AI-klient</div>
+                        <div class="docs-df-sub">Claude / Copilot</div>
+                    </div>
+                    <div class="docs-df-arrow">&#8596;</div>
+                    <div style="flex: 1; font-size: 0.82rem; color: #6b7280;">
+                        <strong style="color: #1a1f36;">stdio transport</strong> &mdash; JSON-beskeder over stdin/stdout.
+                        Serveren logger til stderr s&aring; stdout forbliver ren til protokollen.
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div class="docs-df-node df-purple" style="min-width: 160px;">
+                        <div class="docs-df-label">MCP Server</div>
+                        <div class="docs-df-sub">Node.js-proces</div>
+                    </div>
+                    <div class="docs-df-arrow">&#8596;</div>
+                    <div style="flex: 1; font-size: 0.82rem; color: #6b7280;">
+                        <strong style="color: #1a1f36;">Filsystem</strong> &mdash; L&aelig;ser og skriver .xlf-filer,
+                        app.json, glossarer direkte p&aring; disk.
+                    </div>
+                </div>
+            </div>
+
+            @* ─── Web UI + MCP ─── *@
+            <h3 class="docs-h3">Denne Web UI og MCP-serveren</h3>
+            <p class="docs-section-desc" style="margin-bottom: 1rem;">
+                N&aring;r du bruger denne Blazor web-app, sker der noget smart bag kulisserne:
+                Blazor-appen <strong>starter selv en Node.js MCP-server som child-process</strong> n&aring;r du trykker "Connect".
+                Der k&oslash;rer alts&aring; <em>ingen</em> MCP-server i forvejen &mdash; den oprettes on-demand.
+            </p>
+
+            <div class="docs-process-diagram">
+                <div class="docs-process-col">
+                    <div class="docs-process-box process-blazor">
+                        <div class="docs-process-title">Blazor App (C#)</div>
+                        <div class="docs-process-sub">dotnet run &bull; http://localhost:5000</div>
+                        <div class="docs-process-inner">
+                            <div class="docs-process-component">
+                                <strong>McpBridgeService</strong>
+                                <span>Forbinder til MCP via StdioClientTransport</span>
+                            </div>
+                            <div class="docs-process-component">
+                                <strong>TranslationAgentService</strong>
+                                <span>Opretter AI-agent med MCP-tools</span>
+                            </div>
+                            <div class="docs-process-component">
+                                <strong>SessionStateService</strong>
+                                <span>Husker valgt fil, sprog, indstillinger</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="docs-process-connector">
+                    <div class="docs-process-pipe">
+                        <div class="docs-process-pipe-label">stdin</div>
+                        <div class="docs-process-pipe-arrow">&darr; JSON-kald</div>
+                    </div>
+                    <div class="docs-process-pipe">
+                        <div class="docs-process-pipe-arrow">&uarr; JSON-svar</div>
+                        <div class="docs-process-pipe-label">stdout</div>
+                    </div>
+                </div>
+
+                <div class="docs-process-col">
+                    <div class="docs-process-box process-node">
+                        <div class="docs-process-title">Node.js MCP Server</div>
+                        <div class="docs-process-sub">child process &bull; npx nab-al-tools-mcp</div>
+                        <div class="docs-process-inner">
+                            <div class="docs-process-component">
+                                <strong>9 registrerede tools</strong>
+                                <span>initialize, getTextsToTranslate, save...</span>
+                            </div>
+                            <div class="docs-process-component">
+                                <strong>Global state</strong>
+                                <span>appFolderPath, settings, g.xlf-sti</span>
+                            </div>
+                            <div class="docs-process-component">
+                                <strong>Filsystem-adgang</strong>
+                                <span>L&aelig;ser/skriver .xlf, app.json, glossar</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h4 class="docs-h4">Hvad sker der trin for trin?</h4>
+            <div class="docs-sequence">
+                <div class="docs-seq-step">
+                    <div class="docs-seq-num">1</div>
+                    <div class="docs-seq-content">
+                        <div class="docs-seq-actor">Bruger</div>
+                        <div class="docs-seq-action">Starter Blazor-appen med <code>dotnet run</code>. Ingen MCP-server k&oslash;rer endnu.</div>
+                    </div>
+                </div>
+                <div class="docs-seq-step">
+                    <div class="docs-seq-num">2</div>
+                    <div class="docs-seq-content">
+                        <div class="docs-seq-actor">Bruger</div>
+                        <div class="docs-seq-action">Indtaster app-sti og trykker <strong>"Connect"</strong> p&aring; Setup-siden.</div>
+                    </div>
+                </div>
+                <div class="docs-seq-step">
+                    <div class="docs-seq-num">3</div>
+                    <div class="docs-seq-content">
+                        <div class="docs-seq-actor">Blazor</div>
+                        <div class="docs-seq-action"><code>McpBridgeService.ConnectAsync()</code> starter en <strong>ny Node.js child-process</strong>: <code>npx -y @@nabsolutions/nab-al-tools-mcp</code></div>
+                    </div>
+                </div>
+                <div class="docs-seq-step">
+                    <div class="docs-seq-num">4</div>
+                    <div class="docs-seq-content">
+                        <div class="docs-seq-actor">Blazor</div>
+                        <div class="docs-seq-action">Sender <code>initialize</code> tool-kald med app-stien over <strong>stdin</strong>. Node.js loader app.json, finder g.xlf, gemmer state.</div>
+                    </div>
+                </div>
+                <div class="docs-seq-step">
+                    <div class="docs-seq-num">5</div>
+                    <div class="docs-seq-content">
+                        <div class="docs-seq-actor">Bruger</div>
+                        <div class="docs-seq-action">V&aelig;lger sprogfil og g&aring;r til Chat/Translate/Review. Alle tool-kald bruger den k&oslash;rende Node.js-proces.</div>
+                    </div>
+                </div>
+                <div class="docs-seq-step">
+                    <div class="docs-seq-num">6</div>
+                    <div class="docs-seq-content">
+                        <div class="docs-seq-actor">Chat</div>
+                        <div class="docs-seq-action">AI-agenten (Azure OpenAI) f&aring;r MCP-tools som funktioner. N&aring;r den kalder f.eks. <code>getTextsToTranslate</code>, g&aring;r kaldet: AI &rarr; Blazor &rarr; stdin &rarr; Node.js &rarr; disk.</div>
+                    </div>
+                </div>
+                <div class="docs-seq-step">
+                    <div class="docs-seq-num">7</div>
+                    <div class="docs-seq-content">
+                        <div class="docs-seq-actor">Blazor</div>
+                        <div class="docs-seq-action">N&aring;r appen lukkes, kalder <code>DisposeAsync()</code> som dr&aelig;ber Node.js child-processen.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="docs-callout">
+                <strong>N&oslash;glepunkt:</strong> Node.js MCP-serveren er <em>ikke</em> en separat service du skal starte manuelt.
+                Blazor-appen h&aring;ndterer hele livscyklussen: opstart, kommunikation og nedlukning.
+                Konfigurationen i <code>appsettings.json</code> bestemmer hvilken kommando der bruges
+                (default: <code>npx -y @@nabsolutions/nab-al-tools-mcp</code>).
+            </div>
+
+            <h4 class="docs-h4">Fuld kommunikationsvej for et tool-kald</h4>
+            <div class="docs-comm-flow">
+                <div class="docs-comm-step">
+                    <div class="docs-comm-node comm-user">Bruger / AI</div>
+                    <div class="docs-comm-label">"Overs&aelig;t 10 tekster"</div>
+                </div>
+                <div class="docs-comm-arrow">&darr;</div>
+                <div class="docs-comm-step">
+                    <div class="docs-comm-node comm-blazor">Blazor C#</div>
+                    <div class="docs-comm-label">McpBridge.CallToolAsync("getTextsToTranslate", {filePath, offset, limit})</div>
+                </div>
+                <div class="docs-comm-arrow">&darr; <span class="docs-comm-transport">stdin (JSON)</span></div>
+                <div class="docs-comm-step">
+                    <div class="docs-comm-node comm-node">Node.js MCP</div>
+                    <div class="docs-comm-label">XliffToolsCore.getTextsToTranslateCore() &rarr; Xliff.fromFileSync()</div>
+                </div>
+                <div class="docs-comm-arrow">&darr;</div>
+                <div class="docs-comm-step">
+                    <div class="docs-comm-node comm-disk">Disk</div>
+                    <div class="docs-comm-label">L&aelig;ser MyApp.da-DK.xlf, filtrerer uoversatte units</div>
+                </div>
+                <div class="docs-comm-arrow">&uarr; <span class="docs-comm-transport">stdout (JSON)</span></div>
+                <div class="docs-comm-step">
+                    <div class="docs-comm-node comm-blazor">Blazor C#</div>
+                    <div class="docs-comm-label">Deserialiserer JSON til UntranslatedTextsResult</div>
+                </div>
+                <div class="docs-comm-arrow">&uarr;</div>
+                <div class="docs-comm-step">
+                    <div class="docs-comm-node comm-user">Bruger / AI</div>
+                    <div class="docs-comm-label">Viser tekster i UI eller sender til AI for overs&aelig;ttelse</div>
+                </div>
+            </div>
+
+            @* ─── Initialization Guard ─── *@
+            <h3 class="docs-h3">Initialisering &mdash; det f&oslash;rste der sker</h3>
+            <p class="docs-section-desc" style="margin-bottom: 1rem;">
+                F&oslash;r noget andet kan ske, <strong>skal</strong> AI'en kalde <code>initialize</code>-v&aelig;rkt&oslash;jet.
+                Det fortæller serveren hvilket AL-projekt den skal arbejde med.
+            </p>
+
+            <div class="docs-flow">
+                <div class="docs-flow-step">
+                    <div class="docs-flow-num"><span>1</span></div>
+                    <div class="docs-flow-line"></div>
+                    <div class="docs-flow-body">
+                        <h4>AI kalder <code>initialize</code></h4>
+                        <p>Sender stien til AL-app-mappen (der hvor <code>app.json</code> ligger) og eventuelt en workspace-fil.</p>
+                        <div class="docs-code-block" style="margin-top: 0.75rem;">
+                            <div class="docs-code-title">Eksempel: initialize-kald</div>
+                            <pre><code>{
+  <span class="cf">"appFolderPath"</span>: <span class="cs">"C:/dev/MyApp"</span>,
+  <span class="cf">"workspaceFilePath"</span>: <span class="cs">"C:/dev/MyApp.code-workspace"</span>
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="docs-flow-step">
+                    <div class="docs-flow-num"><span>2</span></div>
+                    <div class="docs-flow-line"></div>
+                    <div class="docs-flow-body">
+                        <h4>Serveren validerer og indl&aelig;ser</h4>
+                        <p>Loader <code>app.json</code> (manifest), projektindstillinger, og finder den genererede <code>g.xlf</code>-masterfil i <code>Translations/</code>-mappen. Fejler hvis filen ikke findes (projektet skal v&aelig;re bygget f&oslash;rst).</p>
+                    </div>
+                </div>
+
+                <div class="docs-flow-step">
+                    <div class="docs-flow-num"><span>3</span></div>
+                    <div class="docs-flow-line last"></div>
+                    <div class="docs-flow-body">
+                        <h4>Global state gemmes</h4>
+                        <p>Serveren gemmer indstillinger, manifest og g.xlf-sti i hukommelsen. Alle efterf&oslash;lgende tool-kald genbruger denne state. Det er derfor initialisering kun skal ske &eacute;n gang per session.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="docs-callout">
+                <strong>Guard pattern:</strong> Hvert tool (undtagen <code>initialize</code>) starter med at tjekke:
+                "Er serveren initialiseret?" Hvis nej, returneres en fejl der fort&aelig;ller AI'en at den skal kalde <code>initialize</code> f&oslash;rst.
+                Det sikrer at AI'en aldrig kan lave fejl ved at kalde v&aelig;rkt&oslash;jer uden kontekst.
+            </div>
+
+            @* ─── Hvert tool i detaljer ─── *@
+            <h3 class="docs-h3">Hvert v&aelig;rkt&oslash;j i detaljer</h3>
+            <p class="docs-section-desc" style="margin-bottom: 1.5rem;">
+                Her er pr&aelig;cis hvad hvert v&aelig;rkt&oslash;j g&oslash;r, hvilke parametre det tager, og hvad det returnerer.
+                Alle input valideres med <strong>Zod-skemaer</strong> (runtime type-tjek).
+            </p>
+
+            @* Tool details - expandable *@
+            @foreach (var tool in mcpTools)
+            {
+                <div class="docs-tool-detail @(expandedTool == tool.Name ? "expanded" : "")"
+                     @onclick="() => ToggleTool(tool.Name)">
+                    <div class="docs-tool-detail-header">
+                        <div>
+                            <div class="docs-tool-name" style="margin-bottom: 0.15rem;">@tool.Name</div>
+                            <div class="docs-tool-subtitle">@tool.Subtitle</div>
+                        </div>
+                        <div class="docs-tool-badges">
+                            @if (tool.ReadOnly)
+                            {
+                                <span class="docs-tag tag-file">read-only</span>
+                            }
+                            else
+                            {
+                                <span class="docs-tag tag-state">skriver filer</span>
+                            }
+                            @if (tool.RequiresNetwork)
+                            {
+                                <span class="docs-tag tag-ai">netv&aelig;rk</span>
+                            }
+                        </div>
+                        <span class="docs-expand-icon">@(expandedTool == tool.Name ? "\u25B2" : "\u25BC")</span>
+                    </div>
+
+                    @if (expandedTool == tool.Name)
+                    {
+                        <div class="docs-tool-detail-body" @onclick:stopPropagation="true">
+                            <div class="docs-tool-explain">@((MarkupString)tool.Description)</div>
+
+                            <div class="docs-two-col" style="margin-top: 1rem; gap: 0.75rem;">
+                                <div>
+                                    <div class="docs-mini-label">Parametre (input)</div>
+                                    <div class="docs-code-block" style="margin: 0.5rem 0;">
+                                        <pre><code>@((MarkupString)tool.InputExample)</code></pre>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="docs-mini-label">Returnerer (output)</div>
+                                    <div class="docs-code-block" style="margin: 0.5rem 0;">
+                                        <pre><code>@((MarkupString)tool.OutputExample)</code></pre>
+                                    </div>
+                                </div>
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(tool.PracticalNote))
+                            {
+                                <div class="docs-callout" style="margin-top: 0.75rem; margin-bottom: 0;">
+                                    @((MarkupString)tool.PracticalNote)
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+
+            @* ─── Paginering ─── *@
+            <h3 class="docs-h3">Paginering &mdash; hvorfor og hvordan</h3>
+            <div class="docs-explainer">
+                <p>
+                    En XLIFF-fil kan indeholde <strong>tusindvis</strong> af overs&aelig;ttelsesenheder. Hvis AI'en fik dem alle p&aring; &eacute;n gang,
+                    ville den l&oslash;be t&oslash;r for kontekstvindue. Derfor bruger alle l&aelig;se-v&aelig;rkt&oslash;jer <code>offset</code> og <code>limit</code>:
+                </p>
+            </div>
+
+            <div class="docs-code-block" style="margin: 1rem 0;">
+                <div class="docs-code-title">Pagineringseksempel: hent 50 ad gangen</div>
+                <pre><code><span class="cc">// F&oslash;rste batch</span>
+{ <span class="cf">"offset"</span>: <span class="cs">0</span>, <span class="cf">"limit"</span>: <span class="cs">50</span> }  <span class="cc">&#8594; tekst 1-50</span>
+
+<span class="cc">// N&aelig;ste batch</span>
+{ <span class="cf">"offset"</span>: <span class="cs">50</span>, <span class="cf">"limit"</span>: <span class="cs">50</span> } <span class="cc">&#8594; tekst 51-100</span>
+
+<span class="cc">// Alle p&aring; &eacute;n gang</span>
+{ <span class="cf">"offset"</span>: <span class="cs">0</span>, <span class="cf">"limit"</span>: <span class="cs">0</span> }  <span class="cc">&#8594; alle tekster</span></code></pre>
+            </div>
+
+            <div class="docs-callout">
+                <strong>Vigtigt:</strong> Efter at AI'en kalder <code>saveTranslatedTexts</code>, skal den nulstille paginering til <code>offset: 0</code>.
+                Grunden er at listen af uoversatte tekster &aelig;ndrer sig n&aring;r overs&aelig;ttelser gemmes (og propageres), s&aring; de gamle offsets passer ikke l&aelig;ngere.
+            </div>
+
+            @* ─── Propagering ─── *@
+            <h3 class="docs-h3">Propagering &mdash; den smarte genvej</h3>
+            <p class="docs-section-desc" style="margin-bottom: 1rem;">
+                N&aring;r AI'en gemmer en overs&aelig;ttelse, sker der mere end bare at &eacute;n tekst opdateres.
+                <strong>Propagering</strong> betyder at alle andre steder med n&oslash;jagtig samme kildetekst automatisk f&aring;r den samme overs&aelig;ttelse.
+            </p>
+
+            <div class="docs-dataflow" style="flex-direction: column; gap: 0.5rem; align-items: stretch;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div class="docs-df-node df-blue" style="min-width: 200px;">
+                        <div class="docs-df-label">AI gemmer</div>
+                        <div class="docs-df-sub">"Amount" &#8594; "Bel&oslash;b"</div>
+                    </div>
+                    <div class="docs-df-arrow">&#8594;</div>
+                    <div class="docs-df-node df-purple" style="min-width: 200px;">
+                        <div class="docs-df-label">saveTranslatedTexts</div>
+                        <div class="docs-df-sub">opdaterer unit A</div>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.75rem; padding-left: 3rem;">
+                    <div class="docs-df-arrow">&#8600;</div>
+                    <div class="docs-df-node df-green" style="min-width: 280px;">
+                        <div class="docs-df-label">Propagering</div>
+                        <div class="docs-df-sub">Finder unit B, C, D med samme kilde &#8594; kopierer "Bel&oslash;b"</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="docs-explainer" style="margin-top: 1rem;">
+                <p>
+                    Propagering sker <strong>kun</strong> for status <code>translated</code>, <code>final</code> og <code>signed-off</code>.
+                    Hvis AI'en s&aelig;tter status til <code>needs-review-translation</code>, propageres der <strong>ikke</strong> &mdash;
+                    fordi det ville sprede usikre overs&aelig;ttelser.
+                </p>
+            </div>
+
+            @* ─── Status system ─── *@
+            <h3 class="docs-h3">Status-systemet</h3>
+            <p class="docs-section-desc" style="margin-bottom: 1rem;">
+                Hver overs&aelig;ttelse har en <strong>status</strong> der f&oslash;lger XLIFF-standarden. Det giver et klart workflow fra uoversat til godkendt.
+            </p>
+
+            <div class="docs-status-flow">
+                <div class="docs-status-node status-untranslated">
+                    <strong>needs-translation</strong>
+                    <span>Ny eller &aelig;ndret tekst</span>
+                </div>
+                <div class="docs-status-arrow">&#8594;</div>
+                <div class="docs-status-node status-translated">
+                    <strong>translated</strong>
+                    <span>Overs&aelig;ttelse tilf&oslash;jet</span>
+                </div>
+                <div class="docs-status-arrow">&#8594;</div>
+                <div class="docs-status-node status-review">
+                    <strong>needs-review</strong>
+                    <span>Kilde &aelig;ndret, tjek n&oslash;dvendigt</span>
+                </div>
+                <div class="docs-status-arrow">&#8594;</div>
+                <div class="docs-status-node status-signed">
+                    <strong>signed-off</strong>
+                    <span>Gennemg&aring;et og godkendt</span>
+                </div>
+                <div class="docs-status-arrow">&#8594;</div>
+                <div class="docs-status-node status-final">
+                    <strong>final</strong>
+                    <span>L&aring;st, klar til produktion</span>
+                </div>
+            </div>
+
+            @* ─── Kodearkitektur ─── *@
+            <h3 class="docs-h3">Kode-arkitekturen bag MCP-serveren</h3>
+            <p class="docs-section-desc" style="margin-bottom: 1rem;">
+                MCP-serveren og VS Code-udvidelsen deler kernelogik via <code>XliffToolsCore.ts</code>.
+                Det sikrer at begge altid giver identiske resultater.
+            </p>
+
+            <div class="docs-arch">
+                <div class="docs-arch-layer">
+                    <div class="docs-arch-label label-purple">MCP-vejen</div>
+                    <div class="docs-arch-boxes">
+                        <div class="docs-arch-box">
+                            <h5>server.ts</h5>
+                            <p>Registrerer 9 tools med Zod-skemaer. H&aring;ndterer stdio-transport, global state og fejlh&aring;ndtering.</p>
+                        </div>
+                        <div class="docs-arch-box">
+                            <h5>CliSettingsLoader.ts</h5>
+                            <p>L&aelig;ser indstillinger fra .code-workspace og app.json. Ingen VS Code API.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="docs-arch-connector">
+                    <div class="docs-arch-arrow-line"></div>
+                    <span>&#9660; kalder</span>
+                </div>
+
+                <div class="docs-arch-layer">
+                    <div class="docs-arch-label label-blue">Delt kerne (vscode-fri)</div>
+                    <div class="docs-arch-boxes">
+                        <div class="docs-arch-box">
+                            <h5>XliffToolsCore.ts</h5>
+                            <p>8 kernefunktioner: getTextsToTranslateCore, saveTranslatedTextsCore, getTextsByKeywordCore osv. All forretningslogik lever her.</p>
+                        </div>
+                        <div class="docs-arch-box">
+                            <h5>GlossaryCore.ts</h5>
+                            <p>Glossar-logik: indl&aelig;s TSV, merge lokalt + indbygget glossar, spr&aring;gkolonne-opslag.</p>
+                        </div>
+                        <div class="docs-arch-box">
+                            <h5>ToolHelpers.ts</h5>
+                            <p>Hj&aelig;lpefunktioner: find app-mappe fra XLF-sti, load manifest og indstillinger.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="docs-arch-connector">
+                    <div class="docs-arch-arrow-line"></div>
+                    <span>&#9650; kalder ogs&aring;</span>
+                </div>
+
+                <div class="docs-arch-layer">
+                    <div class="docs-arch-label label-green">VS Code-vejen</div>
+                    <div class="docs-arch-boxes">
+                        <div class="docs-arch-box">
+                            <h5>ChatTools/*.ts</h5>
+                            <p>10 tool-klasser der implementerer VS Codes LanguageModelTool-interface. Kalder de <em>samme</em> Core-funktioner.</p>
+                        </div>
+                        <div class="docs-arch-box">
+                            <h5>SettingsLoader.ts</h5>
+                            <p>L&aelig;ser indstillinger fra VS Codes settings API. Kun tilg&aelig;ngelig inde i VS Code.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="docs-callout" style="margin-top: 1.5rem;">
+                <strong>N&oslash;glen til kvalitet:</strong> Fordi b&aring;de MCP og VS Code kalder <em>XliffToolsCore.ts</em>,
+                er der kun &eacute;t sted at rette bugs og &eacute;t sted at teste. Et fix i kernen fikser det b&aring;de for Claude Desktop-brugere
+                og VS Code-brugere p&aring; &eacute;n gang.
+            </div>
+
+            @* ─── Praktisk eksempel ─── *@
+            <h3 class="docs-h3">Praktisk eksempel: AI overs&aelig;tter en app</h3>
+            <p class="docs-section-desc" style="margin-bottom: 1rem;">
+                Her er den typiske sekvens af tool-kald n&aring;r en AI-agent overs&aelig;tter en hel app:
+            </p>
+
+            <div class="docs-sequence">
+                <div class="docs-seq-step">
+                    <div class="docs-seq-num">1</div>
+                    <div class="docs-seq-content">
+                        <div class="docs-seq-actor">AI</div>
+                        <div class="docs-seq-action">Kalder <code>initialize</code> med app-stien</div>
+                    </div>
+                </div>
+                <div class="docs-seq-step">
+                    <div class="docs-seq-num">2</div>
+                    <div class="docs-seq-content">
+                        <div class="docs-seq-actor">AI</div>
+                        <div class="docs-seq-action">Kalder <code>getGlossaryTerms</code> for at l&aelig;re terminologien</div>
+                    </div>
+                </div>
+                <div class="docs-seq-step">
+                    <div class="docs-seq-num">3</div>
+                    <div class="docs-seq-content">
+                        <div class="docs-seq-actor">AI</div>
+                        <div class="docs-seq-action">Kalder <code>getTextsToTranslate</code> med offset=0, limit=50</div>
+                    </div>
+                </div>
+                <div class="docs-seq-step">
+                    <div class="docs-seq-num">4</div>
+                    <div class="docs-seq-content">
+                        <div class="docs-seq-actor">Server</div>
+                        <div class="docs-seq-action">Returnerer 50 tekster med kontekst, maxL&aelig;ngde og kommentarer</div>
+                    </div>
+                </div>
+                <div class="docs-seq-step">
+                    <div class="docs-seq-num">5</div>
+                    <div class="docs-seq-content">
+                        <div class="docs-seq-actor">AI</div>
+                        <div class="docs-seq-action">Overs&aelig;tter og kalder <code>saveTranslatedTexts</code> med 50 overs&aelig;ttelser</div>
+                    </div>
+                </div>
+                <div class="docs-seq-step">
+                    <div class="docs-seq-num">6</div>
+                    <div class="docs-seq-content">
+                        <div class="docs-seq-actor">Server</div>
+                        <div class="docs-seq-action">Gemmer + propagerer. Returnerer "87 units opdateret" (50 direkte + 37 propageret)</div>
+                    </div>
+                </div>
+                <div class="docs-seq-step">
+                    <div class="docs-seq-num">7</div>
+                    <div class="docs-seq-content">
+                        <div class="docs-seq-actor">AI</div>
+                        <div class="docs-seq-action">Nulstiller offset til 0 og kalder <code>getTextsToTranslate</code> igen &#8594; gentager til alt er oversat</div>
+                    </div>
+                </div>
+            </div>
+
+            @* ─── Tool annotations ─── *@
+            <h3 class="docs-h3">Tool-annotationer &mdash; metadata til AI'en</h3>
+            <div class="docs-explainer">
+                <p>
+                    Hvert v&aelig;rkt&oslash;j har <strong>annotationer</strong> der hj&aelig;lper AI'en med at tr&aelig;ffe bedre beslutninger:
+                </p>
+            </div>
+
+            <div class="docs-annotation-grid">
+                <div class="docs-annotation">
+                    <code>readOnlyHint</code>
+                    <p>Fortæller om v&aelig;rkt&oslash;jet kun l&aelig;ser eller ogs&aring; &aelig;ndrer filer. AI'en kan kalde read-only tools uden bekymring.</p>
+                </div>
+                <div class="docs-annotation">
+                    <code>destructiveHint</code>
+                    <p>Signalerer at v&aelig;rkt&oslash;jet overskriver eksisterende data. AI'en b&oslash;r bekr&aelig;fte med brugeren f&oslash;rst.</p>
+                </div>
+                <div class="docs-annotation">
+                    <code>idempotentHint</code>
+                    <p>Kan v&aelig;rkt&oslash;jet k&oslash;res flere gange med samme resultat? Vigtig for retry-logik.</p>
+                </div>
+                <div class="docs-annotation">
+                    <code>openWorldHint</code>
+                    <p>Kr&aelig;ver v&aelig;rkt&oslash;jet netv&aelig;rksadgang? Kun <code>createLanguageXlf</code> (n&aring;r base-app matching er sl&aring;et til).</p>
+                </div>
+            </div>
+
+            @* ─── Fejlhåndtering ─── *@
+            <h3 class="docs-h3">Fejlh&aring;ndtering</h3>
+            <div class="docs-explainer">
+                <p>
+                    Alle v&aelig;rkt&oslash;jer bruger en standardiseret <code>handleMcpToolError()</code> der fanger fejl og returnerer
+                    klare, actionable beskeder. AI'en f&aring;r aldrig en crash &mdash; den f&aring;r altid en forst&aring;elig fejl den kan handle p&aring;.
+                </p>
+            </div>
+
+            <div class="docs-code-block" style="margin-top: 0.75rem;">
+                <div class="docs-code-title">Eksempel: typiske fejlbeskeder</div>
+                <pre><code><span class="cc">// Ikke initialiseret</span>
+<span class="cs">"MCP server not initialized. Call 'initialize' first."</span>
+
+<span class="cc">// Ugyldig input (Zod-validering)</span>
+<span class="cs">"Input validation error: filePath: Required"</span>
+
+<span class="cc">// Fil ikke fundet</span>
+<span class="cs">"The file at path C:/dev/MyApp/x.xlf does not exist"</span>
+
+<span class="cc">// Ugyldig regex</span>
+<span class="cs">"Invalid regular expression: /[unclosed/"</span></code></pre>
+            </div>
+        </div>
+    }
+
+    @* ===== Section: Cloud Architecture ===== *@
+    @if (activeTab == "cloud")
+    {
+        <div class="docs-section">
+            <div class="docs-section-label">06 &mdash; Cloud-arkitektur</div>
+            <h2 class="docs-section-title">Kan Web UI'et k&oslash;re i cloud?</h2>
+            <p class="docs-section-desc">
+                I dag k&oslash;rer b&aring;de Blazor-appen og MCP-serveren p&aring; udviklerens maskine.
+                Men hvad hvis man vil have web-UI'et hosted i cloud, s&aring; flere brugere kan tilg&aring; det fra en browser?
+                Her er udfordringen og tre realistiske l&oslash;sninger.
+            </p>
+
+            @* ─── Problemet ─── *@
+            <h3 class="docs-h3">Kerneudfordringen</h3>
+            <div class="docs-explainer">
+                <p>
+                    MCP-serveren <strong>skal</strong> have adgang til <code>.xlf</code>-filerne p&aring; udviklerens maskine.
+                    Blazor UI'et <em>kunne</em> k&oslash;re i cloud. Problemet er broen imellem:
+                    hvordan f&aring;r en cloud-hosted webapp adgang til lokale filer uden at &aring;bne firewall-porte?
+                </p>
+            </div>
+
+            <div class="docs-process-diagram">
+                <div class="docs-process-col">
+                    <div class="docs-process-box process-blazor" style="border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.03);">
+                        <div class="docs-process-title" style="color: #dc2626;">Cloud (Azure / AWS)</div>
+                        <div class="docs-process-sub">Blazor UI &bull; AI-agent &bull; Auth</div>
+                        <div class="docs-process-inner">
+                            <div class="docs-process-component">
+                                <strong>Web UI</strong>
+                                <span>Tilg&aelig;ngelig fra enhver browser</span>
+                            </div>
+                            <div class="docs-process-component">
+                                <strong>Azure OpenAI</strong>
+                                <span>AI-model til overs&aelig;ttelse</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="docs-process-connector">
+                    <div class="docs-process-pipe">
+                        <div class="docs-process-pipe-label" style="color: #dc2626;">?</div>
+                        <div class="docs-process-pipe-arrow" style="color: #dc2626;">&darr; Hvordan?</div>
+                    </div>
+                    <div class="docs-process-pipe">
+                        <div class="docs-process-pipe-arrow" style="color: #dc2626;">&uarr; Hvordan?</div>
+                        <div class="docs-process-pipe-label" style="color: #dc2626;">?</div>
+                    </div>
+                </div>
+
+                <div class="docs-process-col">
+                    <div class="docs-process-box process-node">
+                        <div class="docs-process-title">Lokal maskine</div>
+                        <div class="docs-process-sub">MCP Server &bull; .xlf filer &bull; AL-projekt</div>
+                        <div class="docs-process-inner">
+                            <div class="docs-process-component">
+                                <strong>Node.js MCP</strong>
+                                <span>Skal l&aelig;se/skrive lokale filer</span>
+                            </div>
+                            <div class="docs-process-component">
+                                <strong>Translations/</strong>
+                                <span>*.xlf filerne p&aring; disk</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @* ─── Løsning 1: Lokal sidecar ─── *@
+            <h3 class="docs-h3">L&oslash;sning 1: Lokal sidecar-agent (anbefalet)</h3>
+            <div class="docs-cloud-option recommended">
+                <div class="docs-cloud-badge">Anbefalet</div>
+                <p>
+                    En lille lokal agent k&oslash;rer p&aring; udviklerens maskine. Den starter MCP-serveren og forbinder
+                    <strong>udad</strong> til cloud-UI'et via WebSocket/SignalR. Ingen firewall-&aring;bning n&oslash;dvendig
+                    fordi forbindelsen er udg&aring;ende.
+                </p>
+            </div>
+
+            <div class="docs-cloud-arch">
+                <div class="docs-cloud-layer cloud-layer-top">
+                    <div class="docs-cloud-layer-label">Cloud</div>
+                    <div class="docs-arch-boxes">
+                        <div class="docs-arch-box">
+                            <h5>Blazor Web UI</h5>
+                            <p>Hosted i Azure App Service. Brugere tilg&aring;r via browser.</p>
+                        </div>
+                        <div class="docs-arch-box">
+                            <h5>SignalR Hub</h5>
+                            <p>Real-time forbindelse mellem cloud og lokale agenter. Relayer MCP tool-kald.</p>
+                        </div>
+                        <div class="docs-arch-box">
+                            <h5>Azure OpenAI</h5>
+                            <p>AI-modellen. K&oslash;rer allerede i cloud.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="docs-arch-connector">
+                    <div class="docs-arch-arrow-line"></div>
+                    <span>&#9660; SignalR/WebSocket (udg&aring;ende fra lokal maskine)</span>
+                </div>
+
+                <div class="docs-cloud-layer cloud-layer-bottom">
+                    <div class="docs-cloud-layer-label">Lokal maskine</div>
+                    <div class="docs-arch-boxes">
+                        <div class="docs-arch-box">
+                            <h5>Sidecar Agent (.NET)</h5>
+                            <p>Lille console-app. Forbinder til cloud-hub. Relayer tool-kald til MCP.</p>
+                        </div>
+                        <div class="docs-arch-box">
+                            <h5>Node.js MCP Server</h5>
+                            <p>Startet af sidecar via stdio. Samme server som i dag.</p>
+                        </div>
+                        <div class="docs-arch-box">
+                            <h5>.xlf filer</h5>
+                            <p>Forbliver lokalt. Aldrig uploadet til cloud.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="docs-callout">
+                <strong>Fordele:</strong> Filerne forlader aldrig maskinen. Ingen firewall-konfiguration.
+                Flere udviklere kan bruge samme cloud-UI med hver sin lokale agent.
+                Sidecar'en er en simpel .NET console-app p&aring; ~100 linjer.
+            </div>
+
+            <h4 class="docs-h4">Kommunikationsflow</h4>
+            <div class="docs-comm-flow">
+                <div class="docs-comm-step">
+                    <div class="docs-comm-node comm-user">Bruger (browser)</div>
+                    <div class="docs-comm-label">"Overs&aelig;t 10 tekster" i cloud-UI</div>
+                </div>
+                <div class="docs-comm-arrow">&darr;</div>
+                <div class="docs-comm-step">
+                    <div class="docs-comm-node comm-blazor">Blazor (cloud)</div>
+                    <div class="docs-comm-label">Sender tool-kald via SignalR hub til den rette brugers agent</div>
+                </div>
+                <div class="docs-comm-arrow">&darr; <span class="docs-comm-transport">WebSocket (krypteret)</span></div>
+                <div class="docs-comm-step">
+                    <div class="docs-comm-node comm-node">Sidecar Agent (lokal)</div>
+                    <div class="docs-comm-label">Modtager kald, videresender til MCP via stdin</div>
+                </div>
+                <div class="docs-comm-arrow">&darr; <span class="docs-comm-transport">stdio (JSON)</span></div>
+                <div class="docs-comm-step">
+                    <div class="docs-comm-node comm-disk">Node.js MCP</div>
+                    <div class="docs-comm-label">L&aelig;ser .xlf, udf&oslash;rer operation, returnerer resultat</div>
+                </div>
+                <div class="docs-comm-arrow">&uarr; <span class="docs-comm-transport">Hele vejen tilbage</span></div>
+                <div class="docs-comm-step">
+                    <div class="docs-comm-node comm-user">Bruger (browser)</div>
+                    <div class="docs-comm-label">Ser resultater i UI'et</div>
+                </div>
+            </div>
+
+            @* ─── Løsning 2: MCP over HTTP ─── *@
+            <h3 class="docs-h3">L&oslash;sning 2: MCP over HTTP med tunnel</h3>
+            <div class="docs-cloud-option">
+                <p>
+                    MCP SDK'et underst&oslash;tter <strong>SSE (Server-Sent Events)</strong> som transport i stedet for stdio.
+                    MCP-serveren k&oslash;rer lokalt med en HTTP-endpoint, og en tunnel-service (Azure DevTunnels, Cloudflare Tunnel)
+                    eksponerer den sikkert til cloud-UI'et.
+                </p>
+            </div>
+
+            <div class="docs-process-diagram">
+                <div class="docs-process-col">
+                    <div class="docs-process-box process-blazor">
+                        <div class="docs-process-title">Cloud UI</div>
+                        <div class="docs-process-sub">Blazor &bull; Azure</div>
+                        <div class="docs-process-inner">
+                            <div class="docs-process-component">
+                                <strong>HTTP-klient</strong>
+                                <span>Kalder MCP via tunnel-URL</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="docs-process-connector">
+                    <div class="docs-process-pipe">
+                        <div class="docs-process-pipe-label">HTTPS</div>
+                        <div class="docs-process-pipe-arrow">&darr; SSE</div>
+                    </div>
+                    <div class="docs-process-pipe">
+                        <div class="docs-process-pipe-arrow">&uarr; JSON</div>
+                        <div class="docs-process-pipe-label">tunnel</div>
+                    </div>
+                </div>
+
+                <div class="docs-process-col">
+                    <div class="docs-process-box process-node">
+                        <div class="docs-process-title">Lokal maskine</div>
+                        <div class="docs-process-sub">DevTunnel &bull; MCP (SSE mode)</div>
+                        <div class="docs-process-inner">
+                            <div class="docs-process-component">
+                                <strong>Azure DevTunnel</strong>
+                                <span>Eksponerer lokal port sikkert</span>
+                            </div>
+                            <div class="docs-process-component">
+                                <strong>MCP Server (SSE)</strong>
+                                <span>Lytter p&aring; localhost:3000</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="docs-two-col" style="margin-top: 1rem;">
+                <div class="docs-explainer" style="margin-bottom: 0;">
+                    <p><strong style="color: #059669;">Fordele:</strong> Minimal kode&aelig;ndring &mdash; MCP SDK understøtter SSE out-of-the-box. DevTunnels er gratis og kr&aelig;ver &eacute;n kommando: <code>devtunnel host -p 3000</code>.</p>
+                </div>
+                <div class="docs-explainer" style="margin-bottom: 0;">
+                    <p><strong style="color: #dc2626;">Ulemper:</strong> Tunnel-URL er midlertidig (skifter ved genstart). Brugeren skal starte tunnel manuelt. Latency er h&oslash;jere end sidecar.</p>
+                </div>
+            </div>
+
+            @* ─── Løsning 3: Git-baseret ─── *@
+            <h3 class="docs-h3">L&oslash;sning 3: Git-baseret sync</h3>
+            <div class="docs-cloud-option">
+                <p>
+                    Filerne synkroniseres til cloud via <strong>git</strong>. MCP-serveren k&oslash;rer i cloud og arbejder p&aring; en klone af repo'et.
+                    &AElig;ndringer pushes tilbage som commits.
+                </p>
+            </div>
+
+            <div class="docs-dataflow">
+                <div class="docs-df-node df-blue">
+                    <div class="docs-df-label">Udvikler</div>
+                    <div class="docs-df-sub">git push</div>
+                </div>
+                <div class="docs-df-arrow">&#8594;</div>
+                <div class="docs-df-node df-gold">
+                    <div class="docs-df-label">Git repo</div>
+                    <div class="docs-df-sub">GitHub / Azure DevOps</div>
+                </div>
+                <div class="docs-df-arrow">&#8594;</div>
+                <div class="docs-df-node df-purple">
+                    <div class="docs-df-label">Cloud MCP</div>
+                    <div class="docs-df-sub">git pull &rarr; overs&aelig;t</div>
+                </div>
+                <div class="docs-df-arrow">&#8594;</div>
+                <div class="docs-df-node df-green">
+                    <div class="docs-df-label">PR / commit</div>
+                    <div class="docs-df-sub">med overs&aelig;ttelser</div>
+                </div>
+            </div>
+
+            <div class="docs-two-col" style="margin-top: 1rem;">
+                <div class="docs-explainer" style="margin-bottom: 0;">
+                    <p><strong style="color: #059669;">Fordele:</strong> Helt cloud-native. Ingen lokal software ud over git. Perfekt til CI/CD-pipelines og automatiserede workflows. Audit trail via git-historik.</p>
+                </div>
+                <div class="docs-explainer" style="margin-bottom: 0;">
+                    <p><strong style="color: #dc2626;">Ulemper:</strong> Ikke real-time. Kræver git commit/push/pull-cyklus. Merge-konflikter mulige. Tab af "live editing"-følelsen.</p>
+                </div>
+            </div>
+
+            @* ─── Sammenligning ─── *@
+            <h3 class="docs-h3">Sammenligning</h3>
+            <div class="docs-comparison-table">
+                <div class="docs-comp-header">
+                    <div class="docs-comp-cell"></div>
+                    <div class="docs-comp-cell">Sidecar</div>
+                    <div class="docs-comp-cell">HTTP Tunnel</div>
+                    <div class="docs-comp-cell">Git Sync</div>
+                </div>
+                <div class="docs-comp-row">
+                    <div class="docs-comp-cell docs-comp-label">Real-time</div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-no">&#10007;</span></div>
+                </div>
+                <div class="docs-comp-row">
+                    <div class="docs-comp-cell docs-comp-label">Ingen firewall-&aring;bning</div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                </div>
+                <div class="docs-comp-row">
+                    <div class="docs-comp-cell docs-comp-label">Ingen lokal software</div>
+                    <div class="docs-comp-cell"><span class="docs-comp-no">&#10007;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-no">&#10007;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                </div>
+                <div class="docs-comp-row">
+                    <div class="docs-comp-cell docs-comp-label">Filer forbliver lokalt</div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-no">&#10007;</span></div>
+                </div>
+                <div class="docs-comp-row">
+                    <div class="docs-comp-cell docs-comp-label">Kode&aelig;ndring</div>
+                    <div class="docs-comp-cell">Moderat</div>
+                    <div class="docs-comp-cell">Minimal</div>
+                    <div class="docs-comp-cell">Stor</div>
+                </div>
+                <div class="docs-comp-row">
+                    <div class="docs-comp-cell docs-comp-label">Bedst til</div>
+                    <div class="docs-comp-cell">Team-brug</div>
+                    <div class="docs-comp-cell">Hurtig POC</div>
+                    <div class="docs-comp-cell">CI/CD</div>
+                </div>
+            </div>
+
+            <div class="docs-callout" style="margin-top: 1.5rem;">
+                <strong>Cloud-konklusion:</strong> For det typiske scenarie &mdash; et team af BC-udviklere der vil dele et overs&aelig;ttelses-UI &mdash;
+                er <strong>sidecar-agenten</strong> den bedste vej. Men der findes en endnu simplere vej...
+            </div>
+
+            @* ─── PWA / Desktop App ─── *@
+            <h2 class="docs-section-title" style="margin-top: 3rem;">Alternativ: Lokal desktop-app</h2>
+            <p class="docs-section-desc">
+                I stedet for at flytte UI'et til cloud og bygge en bro tilbage til lokale filer,
+                kan man g&aring; den modsatte vej: <strong>pak hele l&oslash;sningen som en lokal app</strong>.
+                S&aring; er der ingen bro, ingen tunnel, ingen firewall &mdash; alt k&oslash;rer p&aring; maskinen.
+            </p>
+
+            <div class="docs-explainer">
+                <p>
+                    T&aelig;nk p&aring; det som forskellen mellem Google Docs (cloud) og VS Code (lokal app med web-teknologi).
+                    Blazor-appen er allerede et web-UI &mdash; den skal bare pakkes ind, s&aring; brugeren kan installere den som en app.
+                </p>
+            </div>
+
+            @* ── Arkitektur-diagram ── *@
+            <h3 class="docs-h3">Alt i &eacute;n boks</h3>
+            <div class="docs-desktop-arch">
+                <div class="docs-desktop-shell">
+                    <div class="docs-desktop-shell-title">
+                        <span class="docs-desktop-dots">
+                            <span class="dot-red"></span><span class="dot-yellow"></span><span class="dot-green"></span>
+                        </span>
+                        NAB XLIFF Translator
+                    </div>
+                    <div class="docs-desktop-inner">
+                        <div class="docs-desktop-layer">
+                            <div class="docs-desktop-component primary">
+                                <strong>Blazor Web UI</strong>
+                                <span>Setup, Chat, Translate, Review, Search, Docs</span>
+                            </div>
+                        </div>
+                        <div class="docs-desktop-layer">
+                            <div class="docs-desktop-component secondary">
+                                <strong>Kestrel webserver</strong>
+                                <span>Indbygget i .NET &mdash; serverer UI p&aring; localhost</span>
+                            </div>
+                            <div class="docs-desktop-component secondary">
+                                <strong>McpBridgeService</strong>
+                                <span>Starter og styrer Node.js-processen</span>
+                            </div>
+                        </div>
+                        <div class="docs-desktop-layer">
+                            <div class="docs-desktop-component tertiary">
+                                <strong>Node.js MCP Server</strong>
+                                <span>Child process &bull; stdio</span>
+                            </div>
+                            <div class="docs-desktop-component tertiary">
+                                <strong>Lokale .xlf filer</strong>
+                                <span>L&aelig;ses/skrives direkte</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @* ── 3 Approaches ── *@
+            <h3 class="docs-h3">Tre m&aring;der at pakke det p&aring;</h3>
+
+            <div class="docs-approach-grid">
+                <div class="docs-approach-card">
+                    <div class="docs-approach-num">A</div>
+                    <h4>PWA (Progressive Web App)</h4>
+                    <p class="docs-approach-how">
+                        Tilf&oslash;j en <code>manifest.json</code> og en service worker til den eksisterende Blazor-app.
+                        Brugeren &aring;bner appen i Chrome/Edge og klikker <strong>"Install app"</strong> i adresselinjen.
+                    </p>
+                    <div class="docs-approach-details">
+                        <div class="docs-approach-pro">
+                            <strong>Fordele</strong>
+                            <ul>
+                                <li>Minimal kode&aelig;ndring (2-3 filer)</li>
+                                <li>Eget app-vindue, ikon i proceslinjen</li>
+                                <li>Auto-opdatering via service worker</li>
+                                <li>Virker p&aring; Windows, Mac, Linux</li>
+                            </ul>
+                        </div>
+                        <div class="docs-approach-con">
+                            <strong>Ulemper</strong>
+                            <ul>
+                                <li>Kræver <code>dotnet run</code> i baggrunden</li>
+                                <li>Brugeren skal starte serveren manuelt</li>
+                                <li>Ingen system tray-integration</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="docs-code-block" style="margin-top: 0.75rem;">
+                        <div class="docs-code-title">Kode&aelig;ndring: 2 filer</div>
+                        <pre><code><span class="cc">// wwwroot/manifest.json</span>
+{
+  <span class="cf">"name"</span>: <span class="cs">"NAB XLIFF Translator"</span>,
+  <span class="cf">"short_name"</span>: <span class="cs">"NAB XLIFF"</span>,
+  <span class="cf">"display"</span>: <span class="cs">"standalone"</span>,
+  <span class="cf">"start_url"</span>: <span class="cs">"/"</span>,
+  <span class="cf">"icons"</span>: [...]
+}
+
+<span class="cc">// Tilf&oslash;j i &lt;head&gt; i App.razor:</span>
+&lt;<span class="ck">link</span> <span class="cf">rel</span>=<span class="cs">"manifest"</span>
+      <span class="cf">href</span>=<span class="cs">"manifest.json"</span> /&gt;</code></pre>
+                    </div>
+                </div>
+
+                <div class="docs-approach-card recommended-approach">
+                    <div class="docs-approach-num">B</div>
+                    <div class="docs-cloud-badge">Anbefalet</div>
+                    <h4>.NET MAUI Blazor Hybrid</h4>
+                    <p class="docs-approach-how">
+                        Blazor UI pakket i en <strong>native app-shell</strong> via .NET MAUI.
+                        &Eacute;n <code>.exe</code> der indeholder webserver + UI + starter Node.js MCP automatisk.
+                        Brugeren dobbeltklikker og er i gang.
+                    </p>
+                    <div class="docs-approach-details">
+                        <div class="docs-approach-pro">
+                            <strong>Fordele</strong>
+                            <ul>
+                                <li>&AElig;gte desktop-app (.exe / .app)</li>
+                                <li>System tray, auto-start med Windows</li>
+                                <li>Kan bundle Node.js runtime</li>
+                                <li>Adgang til native API'er (fil-dialog osv.)</li>
+                                <li>Genbruger 100% af Blazor-komponenterne</li>
+                            </ul>
+                        </div>
+                        <div class="docs-approach-con">
+                            <strong>Ulemper</strong>
+                            <ul>
+                                <li>Kræver MAUI workload ved udvikling</li>
+                                <li>St&oslash;rre installationsfil (~80MB)</li>
+                                <li>Separate builds per platform</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="docs-code-block" style="margin-top: 0.75rem;">
+                        <div class="docs-code-title">Projekt-struktur</div>
+                        <pre><code><span class="cc">// Nyt MAUI-projekt der refererer eksisterende Blazor</span>
+NabXliffApp/
+  <span class="cf">MauiProgram.cs</span>      <span class="cc">// MAUI bootstrap</span>
+  <span class="cf">MainPage.xaml</span>       <span class="cc">// BlazorWebView</span>
+  <span class="cf">wwwroot/</span>            <span class="cc">// symlink til web/wwwroot</span>
+  <span class="cf">Components/</span>         <span class="cc">// symlink til web/Components</span>
+
+<span class="cc">// MainPage.xaml:</span>
+&lt;<span class="ck">BlazorWebView</span> <span class="cf">HostPage</span>=<span class="cs">"wwwroot/index.html"</span>&gt;
+  &lt;<span class="ck">RootComponent</span> <span class="cf">ComponentType</span>=<span class="cs">"typeof(App)"</span> /&gt;
+&lt;/<span class="ck">BlazorWebView</span>&gt;</code></pre>
+                    </div>
+                </div>
+
+                <div class="docs-approach-card">
+                    <div class="docs-approach-num">C</div>
+                    <h4>Self-contained .exe</h4>
+                    <p class="docs-approach-how">
+                        <code>dotnet publish --self-contained</code> giver &eacute;n mappe med hele .NET runtime.
+                        Kombineret med en <strong>launcher</strong> der starter Kestrel + &aring;bner browseren.
+                        T&aelig;nk "Electron-light uden Chromium".
+                    </p>
+                    <div class="docs-approach-details">
+                        <div class="docs-approach-pro">
+                            <strong>Fordele</strong>
+                            <ul>
+                                <li>Ingen .NET SDK n&oslash;dvendig hos bruger</li>
+                                <li>Simpel distribution (zip-fil)</li>
+                                <li>Mindste kode&aelig;ndring (kun publish-config)</li>
+                                <li>Virker i dag med &eacute;n kommando</li>
+                            </ul>
+                        </div>
+                        <div class="docs-approach-con">
+                            <strong>Ulemper</strong>
+                            <ul>
+                                <li>&Aring;bner i brugerens browser (ikke eget vindue)</li>
+                                <li>Brugeren skal lukke console-vinduet manuelt</li>
+                                <li>Ingen auto-opdatering</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="docs-code-block" style="margin-top: 0.75rem;">
+                        <div class="docs-code-title">Publicer som self-contained</div>
+                        <pre><code><span class="cf">dotnet</span> publish -c Release \
+  --self-contained \
+  -r <span class="cs">win-x64</span> \
+  -o <span class="cs">./publish</span>
+
+<span class="cc"># Resultat: publish/ mappe med alt</span>
+<span class="cc"># Brugeren k&oslash;rer: NabXliffWeb.exe</span>
+<span class="cc"># &Aring;bner browser p&aring; http://localhost:5000</span></code></pre>
+                    </div>
+                </div>
+            </div>
+
+            @* ── Sammenligning ── *@
+            <h3 class="docs-h3">Samlet sammenligning: alle l&oslash;sninger</h3>
+            <div class="docs-comparison-table">
+                <div class="docs-comp-header" style="grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr 1fr 1fr;">
+                    <div class="docs-comp-cell"></div>
+                    <div class="docs-comp-cell">PWA</div>
+                    <div class="docs-comp-cell">MAUI</div>
+                    <div class="docs-comp-cell">Self-cont.</div>
+                    <div class="docs-comp-cell">Sidecar</div>
+                    <div class="docs-comp-cell">Tunnel</div>
+                    <div class="docs-comp-cell">Git Sync</div>
+                </div>
+                <div class="docs-comp-row" style="grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr 1fr 1fr;">
+                    <div class="docs-comp-cell docs-comp-label">Eget app-vindue</div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-no">&#10007;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                </div>
+                <div class="docs-comp-row" style="grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr 1fr 1fr;">
+                    <div class="docs-comp-cell docs-comp-label">Alt lokalt</div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-no">&#10007;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-no">&#10007;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-no">&#10007;</span></div>
+                </div>
+                <div class="docs-comp-row" style="grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr 1fr 1fr;">
+                    <div class="docs-comp-cell docs-comp-label">Kode&aelig;ndring</div>
+                    <div class="docs-comp-cell">Minimal</div>
+                    <div class="docs-comp-cell">Moderat</div>
+                    <div class="docs-comp-cell">Ingen</div>
+                    <div class="docs-comp-cell">Moderat</div>
+                    <div class="docs-comp-cell">Minimal</div>
+                    <div class="docs-comp-cell">Stor</div>
+                </div>
+                <div class="docs-comp-row" style="grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr 1fr 1fr;">
+                    <div class="docs-comp-cell docs-comp-label">Installationsfil</div>
+                    <div class="docs-comp-cell">Ingen</div>
+                    <div class="docs-comp-cell">~80MB</div>
+                    <div class="docs-comp-cell">~60MB</div>
+                    <div class="docs-comp-cell">Cloud</div>
+                    <div class="docs-comp-cell">Cloud</div>
+                    <div class="docs-comp-cell">Cloud</div>
+                </div>
+                <div class="docs-comp-row" style="grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr 1fr 1fr;">
+                    <div class="docs-comp-cell docs-comp-label">System tray</div>
+                    <div class="docs-comp-cell"><span class="docs-comp-no">&#10007;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-no">&#10007;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-no">&#10007;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-no">&#10007;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-no">&#10007;</span></div>
+                </div>
+                <div class="docs-comp-row" style="grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr 1fr 1fr;">
+                    <div class="docs-comp-cell docs-comp-label">Multi-bruger</div>
+                    <div class="docs-comp-cell"><span class="docs-comp-no">&#10007;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-no">&#10007;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-no">&#10007;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                    <div class="docs-comp-cell"><span class="docs-comp-yes">&#10003;</span></div>
+                </div>
+                <div class="docs-comp-row" style="grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr 1fr 1fr;">
+                    <div class="docs-comp-cell docs-comp-label">Bedst til</div>
+                    <div class="docs-comp-cell">Hurtig start</div>
+                    <div class="docs-comp-cell">Produkt</div>
+                    <div class="docs-comp-cell">Distribution</div>
+                    <div class="docs-comp-cell">Team</div>
+                    <div class="docs-comp-cell">POC</div>
+                    <div class="docs-comp-cell">CI/CD</div>
+                </div>
+            </div>
+
+            <div class="docs-callout" style="margin-top: 1.5rem;">
+                <strong>Anbefaling:</strong> Start med <strong>PWA</strong> (2 filers &aelig;ndring, virker i dag).
+                N&aring;r produktet modnes, migr&eacute;r til <strong>.NET MAUI Blazor Hybrid</strong> for en &aelig;gte desktop-oplevelse
+                med system tray, auto-start, og bundlet Node.js. Alle Blazor-komponenter genbruges 1:1.
+            </div>
+        </div>
+    }
+
+    @* ===== Section: Det smarte ===== *@
+    @if (activeTab == "smart")
+    {
+        <div class="docs-section">
+            <div class="docs-section-label">05 &mdash; Hvorfor det er smart</div>
+            <h2 class="docs-section-title">De designvalg der g&oslash;r forskellen</h2>
+            <p class="docs-section-desc">
+                NAB AL Tools er ikke bare "endnu et overs&aelig;ttelsesv&aelig;rkt&oslash;j". Her er de arkitektoniske beslutninger
+                der g&oslash;r det til et gennemkt&aelig;nkt og kraftfuldt system.
+            </p>
+
+            <div class="docs-smart-grid">
+                <div class="docs-smart-card">
+                    <div class="docs-smart-num">01</div>
+                    <h4>Delt kerne, tre indgange</h4>
+                    <p>Den samme gennemtestede kode driver VS Code-udvidelsen, MCP-serveren og CLI-v&aelig;rkt&oslash;jerne. Fix en bug &eacute;t sted &mdash; den er fixet overalt.</p>
+                </div>
+                <div class="docs-smart-card">
+                    <div class="docs-smart-num">02</div>
+                    <h4>vscode-uafh&aelig;ngighed</h4>
+                    <p>CLI og MCP importerer aldrig VS Codes API. Det verificeres automatisk i CI. De kan k&oslash;re i Docker, i pipelines, p&aring; servere &mdash; overalt.</p>
+                </div>
+                <div class="docs-smart-card">
+                    <div class="docs-smart-num">03</div>
+                    <h4>AI som f&oslash;rsteklasses borger</h4>
+                    <p>AI-v&aelig;rkt&oslash;jerne er designet med paginering, kontekstrig metadata, og automatisk propagering. AI'en har al den information den beh&oslash;ver.</p>
+                </div>
+                <div class="docs-smart-card">
+                    <div class="docs-smart-num">04</div>
+                    <h4>Base-app matching</h4>
+                    <p>Microsoft har oversat tusindvis af termer til 15+ sprog. NAB AL Tools genbruger dem automatisk. Hvorfor overs&aelig;tte "Customer" manuelt?</p>
+                </div>
+                <div class="docs-smart-card">
+                    <div class="docs-smart-num">05</div>
+                    <h4>Status-workflow</h4>
+                    <p>XLIFF-standarden definerer status: needs-translation &#8594; translated &#8594; signed-off &#8594; final. Hele flowet er implementeret.</p>
+                </div>
+                <div class="docs-smart-card">
+                    <div class="docs-smart-num">06</div>
+                    <h4>Propagering</h4>
+                    <p>Overs&aelig;t "Amount" til "Bel&oslash;b" &eacute;n gang &mdash; og det opdateres automatisk alle steder med identisk kildetekst.</p>
+                </div>
+                <div class="docs-smart-card">
+                    <div class="docs-smart-num">07</div>
+                    <h4>Glossar-system</h4>
+                    <p>Kombinerer Microsofts officielle BC-glossar med projektspecifikke termer. AI-agenten bruger glossaret automatisk.</p>
+                </div>
+                <div class="docs-smart-card">
+                    <div class="docs-smart-num">08</div>
+                    <h4>CI/CD-klar</h4>
+                    <p>RefreshXLF CLI kan validere overs&aelig;ttelsesfiler som del af din build-pipeline. <code>--fail-changed</code> stopper bygget hvis noget mangler.</p>
+                </div>
+                <div class="docs-smart-card">
+                    <div class="docs-smart-num">09</div>
+                    <h4>MCP = universel AI-adgang</h4>
+                    <p>MCP er en &aring;ben standard. Claude, Copilot og fremtidige AI-v&aelig;rkt&oslash;jer kan alle bruge NAB AL Tools &mdash; uden &aelig;ndringer.</p>
+                </div>
+            </div>
+
+            @* Summary dataflow *@
+            <div class="docs-summary-flow">
+                <div class="docs-df-node df-blue">
+                    <div class="docs-df-label">Udvikler</div>
+                </div>
+                <div class="docs-df-arrow">&#8594;</div>
+                <div class="docs-df-node df-purple">
+                    <div class="docs-df-label">NAB AL Tools</div>
+                </div>
+                <div class="docs-df-arrow">&#8594;</div>
+                <div class="docs-df-node df-gold">
+                    <div class="docs-df-label">+ AI</div>
+                </div>
+                <div class="docs-df-arrow">&#8594;</div>
+                <div class="docs-df-node df-green">
+                    <div class="docs-df-label">F&aelig;rdige overs&aelig;ttelser</div>
+                </div>
+            </div>
+        </div>
+    }
+
+</div>
+
+@code {
+    private string activeTab = "overview";
+    private string? expandedTool;
+
+    private void ToggleTool(string name)
+    {
+        expandedTool = expandedTool == name ? null : name;
+    }
+
+    private record TabDef(string Id, string Label, string Icon);
+
+    private readonly TabDef[] tabs =
+    [
+        new("overview", "Oversigt", "\U0001f3e0"),
+        new("workflow", "Workflow", "\U0001f504"),
+        new("architecture", "Arkitektur", "\U0001f3d7\ufe0f"),
+        new("ai", "AI-integration", "\U0001f916"),
+        new("mcp", "MCP Server", "\U0001f50c"),
+        new("cloud", "Cloud", "\u2601\ufe0f"),
+        new("smart", "Det smarte", "\U0001f4a1"),
+    ];
+
+    private record McpToolDef(
+        string Name,
+        string Subtitle,
+        string Description,
+        string InputExample,
+        string OutputExample,
+        bool ReadOnly,
+        bool RequiresNetwork = false,
+        string? PracticalNote = null);
+
+    private readonly McpToolDef[] mcpTools =
+    [
+        new("initialize",
+            "P\u00e5kr\u00e6vet f\u00f8rst \u2014 fort\u00e6ller serveren hvilket projekt den skal arbejde med",
+            "Loader <code>app.json</code>, projektindstillinger og finder <code>g.xlf</code>-masterfilen. Gemmer alt i global state s\u00e5 de \u00f8vrige tools kan bruge det. Kan genkaldes for at skifte til et andet projekt.",
+            "{\n  <span class=\"cf\">\"appFolderPath\"</span>: <span class=\"cs\">\"C:/dev/MyApp\"</span>,\n  <span class=\"cf\">\"workspaceFilePath\"</span>: <span class=\"cs\">\"C:/dev/My.code-workspace\"</span>\n}",
+            "<span class=\"cs\">\"Initialized with g.xlf at:</span>\n<span class=\"cs\"> C:/dev/MyApp/Translations/</span>\n<span class=\"cs\"> MyApp.g.xlf\"</span>",
+            true,
+            PracticalNote: "<strong>Fejler hvis:</strong> <code>app.json</code> mangler, TranslationFile-feature ikke er sl\u00e5et til, eller <code>g.xlf</code> ikke findes (byg projektet f\u00f8rst)."),
+
+        new("getTextsToTranslate",
+            "Henter uoversatte tekster med fuld kontekst",
+            "Filtrerer alle translation units der mangler overs\u00e6ttelse. For hver tekst f\u00e5r AI'en: unikt ID, kildetekst, kontekst (\"Table Customer - Field Name\"), maxl\u00e6ngde og kommentarer. Underst\u00f8tter alternativt kildesprog.",
+            "{\n  <span class=\"cf\">\"filePath\"</span>: <span class=\"cs\">\"...MyApp.da-DK.xlf\"</span>,\n  <span class=\"cf\">\"offset\"</span>: <span class=\"cs\">0</span>,\n  <span class=\"cf\">\"limit\"</span>: <span class=\"cs\">50</span>\n}",
+            "{\n  <span class=\"cf\">\"texts\"</span>: [{\n    <span class=\"cf\">\"id\"</span>: <span class=\"cs\">\"Table50-Field1-Caption\"</span>,\n    <span class=\"cf\">\"sourceText\"</span>: <span class=\"cs\">\"Amount\"</span>,\n    <span class=\"cf\">\"context\"</span>: <span class=\"cs\">\"Table Sales - Field...\"</span>,\n    <span class=\"cf\">\"maxLength\"</span>: <span class=\"cs\">30</span>\n  }],\n  <span class=\"cf\">\"totalUntranslatedCount\"</span>: <span class=\"cs\">247</span>\n}",
+            true,
+            PracticalNote: "<strong>Tip:</strong> Nulstil altid <code>offset</code> til 0 efter <code>saveTranslatedTexts</code>, da listen \u00e6ndrer sig n\u00e5r overs\u00e6ttelser gemmes og propageres."),
+
+        new("saveTranslatedTexts",
+            "Gemmer overs\u00e6ttelser med automatisk propagering",
+            "Opdaterer target-tekst og status for en batch af translation units. <strong>Propagerer</strong> automatisk til alle andre units med identisk kildetekst. Returnerer det samlede antal opdaterede units (inkl. propagerede).",
+            "{\n  <span class=\"cf\">\"filePath\"</span>: <span class=\"cs\">\"...MyApp.da-DK.xlf\"</span>,\n  <span class=\"cf\">\"translations\"</span>: [{\n    <span class=\"cf\">\"id\"</span>: <span class=\"cs\">\"Table50-Field1-Caption\"</span>,\n    <span class=\"cf\">\"targetText\"</span>: <span class=\"cs\">\"Bel\\u00f8b\"</span>,\n    <span class=\"cf\">\"targetState\"</span>: <span class=\"cs\">\"translated\"</span>\n  }]\n}",
+            "<span class=\"cs\">\"Saved 1 translation(s).</span>\n<span class=\"cs\"> Including propagation:</span>\n<span class=\"cs\"> 4 units total updated.\"</span>",
+            false,
+            PracticalNote: "<strong>Propagering styres af status:</strong> <code>translated</code>, <code>final</code> og <code>signed-off</code> propagerer. <code>needs-review-translation</code> propagerer <strong>ikke</strong> (for at undg\u00e5 spredning af usikre overs\u00e6ttelser)."),
+
+        new("getTranslatedTextsMap",
+            "Viser alle overs\u00e6ttelsesvariationer grupperet efter kildetekst",
+            "Returnerer et map: kildetekst \u2192 alle de forskellige overs\u00e6ttelser der bruges. Perfekt til at finde inkonsistenser \u2014 f.eks. hvis \"Total\" b\u00e5de er oversat til \"Total\" og \"I alt\".",
+            "{\n  <span class=\"cf\">\"filePath\"</span>: <span class=\"cs\">\"...MyApp.da-DK.xlf\"</span>,\n  <span class=\"cf\">\"offset\"</span>: <span class=\"cs\">0</span>,\n  <span class=\"cf\">\"limit\"</span>: <span class=\"cs\">100</span>\n}",
+            "[{\n  <span class=\"cf\">\"sourceText\"</span>: <span class=\"cs\">\"Total\"</span>,\n  <span class=\"cf\">\"targetTexts\"</span>: [\n    <span class=\"cs\">\"Total\"</span>,\n    <span class=\"cs\">\"I alt\"</span>\n  ]\n}]",
+            true),
+
+        new("getTranslatedTextsByState",
+            "Filtrerer overs\u00e6ttelser efter status",
+            "Henter overs\u00e6ttelser filtreret p\u00e5 state (translated, needs-review, final, signed-off). Kan ogs\u00e5 filtrere p\u00e5 exact kildetekst. Inkluderer review-\u00e5rsag hvis relevant.",
+            "{\n  <span class=\"cf\">\"filePath\"</span>: <span class=\"cs\">\"...MyApp.da-DK.xlf\"</span>,\n  <span class=\"cf\">\"translationStateFilter\"</span>: <span class=\"cs\">\"needs-review\"</span>,\n  <span class=\"cf\">\"offset\"</span>: <span class=\"cs\">0</span>, <span class=\"cf\">\"limit\"</span>: <span class=\"cs\">50</span>\n}",
+            "[{\n  <span class=\"cf\">\"id\"</span>: <span class=\"cs\">\"Table50-Field2\"</span>,\n  <span class=\"cf\">\"sourceText\"</span>: <span class=\"cs\">\"Name\"</span>,\n  <span class=\"cf\">\"targetText\"</span>: <span class=\"cs\">\"Navn\"</span>,\n  <span class=\"cf\">\"translationState\"</span>: <span class=\"cs\">\"needs-review\"</span>,\n  <span class=\"cf\">\"reviewReason\"</span>: <span class=\"cs\">\"Source changed\"</span>\n}]",
+            true),
+
+        new("getTextsByKeyword",
+            "S\u00f8g i kilde- eller m\u00e5ltekster med regex",
+            "S\u00f8ger efter et keyword (eller regex-m\u00f8nster) i enten kildetekst eller overs\u00e6ttelse. Underst\u00f8tter case-sensitive/insensitive. Perfekt til at finde alle steder et bestemt ord optr\u00e6der.",
+            "{\n  <span class=\"cf\">\"filePath\"</span>: <span class=\"cs\">\"...MyApp.da-DK.xlf\"</span>,\n  <span class=\"cf\">\"keyword\"</span>: <span class=\"cs\">\"[Cc]ustomer\"</span>,\n  <span class=\"cf\">\"isRegex\"</span>: <span class=\"cs\">true</span>,\n  <span class=\"cf\">\"searchInTarget\"</span>: <span class=\"cs\">false</span>,\n  <span class=\"cf\">\"offset\"</span>: <span class=\"cs\">0</span>, <span class=\"cf\">\"limit\"</span>: <span class=\"cs\">20</span>\n}",
+            "[{\n  <span class=\"cf\">\"id\"</span>: <span class=\"cs\">\"Page22-Caption\"</span>,\n  <span class=\"cf\">\"sourceText\"</span>: <span class=\"cs\">\"Customer Card\"</span>,\n  <span class=\"cf\">\"targetText\"</span>: <span class=\"cs\">\"Kundekort\"</span>,\n  <span class=\"cf\">\"context\"</span>: <span class=\"cs\">\"Page Customer Card\"</span>\n}]",
+            true),
+
+        new("getGlossaryTerms",
+            "Henter terminologi fra BC-glossar + lokalt glossar",
+            "Returnerer termpar (kilde \u2192 m\u00e5l) fra Microsofts indbyggede Business Central-glossar. Kan merges med et lokalt projektglossar i TSV-format. Lokale termer har prioritet ved konflikter.",
+            "{\n  <span class=\"cf\">\"targetLanguageCode\"</span>: <span class=\"cs\">\"da-DK\"</span>,\n  <span class=\"cf\">\"sourceLanguageCode\"</span>: <span class=\"cs\">\"en-US\"</span>,\n  <span class=\"cf\">\"localGlossaryPath\"</span>: <span class=\"cs\">\"C:/dev/glossary.tsv\"</span>\n}",
+            "[{\n  <span class=\"cf\">\"source\"</span>: <span class=\"cs\">\"Customer\"</span>,\n  <span class=\"cf\">\"target\"</span>: <span class=\"cs\">\"Debitor\"</span>,\n  <span class=\"cf\">\"description\"</span>: <span class=\"cs\">\"BC standard term\"</span>\n}]",
+            true,
+            PracticalNote: "<strong>TSV-format:</strong> F\u00f8rste linje er headers med sprogkoder (en-US, da-DK, sv-SE...), data er tab-separeret. Sidste kolonne er valgfri Description."),
+
+        new("refreshXlf",
+            "Synkroniserer sprogfiler med g.xlf",
+            "Identisk med VS Code-kommandoen \"NAB: Refresh XLF files from g.xlf\". Tilf\u00f8jer nye tekster, fjerner slettede, markerer \u00e6ndrede til review. AI'en kan kalde dette under en session for at holde filerne opdateret.",
+            "{\n  <span class=\"cf\">\"filePath\"</span>: <span class=\"cs\">\"...MyApp.da-DK.xlf\"</span>\n}",
+            "<span class=\"cs\">\"Refresh completed:</span>\n<span class=\"cs\"> 3 added, 1 removed,</span>\n<span class=\"cs\"> 2 marked for review\"</span>",
+            false,
+            PracticalNote: "<strong>Idempotent:</strong> Kan k\u00f8res flere gange uden problemer. Hvis filerne allerede er synkroniserede, \u00e6ndres intet."),
+
+        new("createLanguageXlf",
+            "Opretter ny sprogfil med valgfri base-app matching",
+            "Opretter en ny XLF-fil for et m\u00e5lsprog. Kan downloade og matche mod Microsofts officielle base-app overs\u00e6ttelser, s\u00e5 du starter med en masse f\u00e6rdige overs\u00e6ttelser i stedet for en tom fil.",
+            "{\n  <span class=\"cf\">\"targetLanguageCode\"</span>: <span class=\"cs\">\"sv-SE\"</span>,\n  <span class=\"cf\">\"matchBaseAppTranslation\"</span>: <span class=\"cs\">true</span>\n}",
+            "{\n  <span class=\"cf\">\"numberOfMatches\"</span>: <span class=\"cs\">142</span>,\n  <span class=\"cf\">\"targetXlfFilepath\"</span>:\n    <span class=\"cs\">\"...MyApp.sv-SE.xlf\"</span>\n}",
+            false,
+            RequiresNetwork: true,
+            PracticalNote: "<strong>Kr\u00e6ver internet</strong> n\u00e5r <code>matchBaseAppTranslation: true</code>. Downloader fra Microsofts servere. Uden matching oprettes en tom fil."),
+
+        new("buildAlPackage",
+            "Bygger AL-projektet og returnerer kompileringsfejl",
+            "K\u00f8rer AL-compileren og returnerer detaljerede fejlbeskeder med kontekst (fil, linje, fejlkode). Giver AI'en mulighed for at debugge build-problemer.",
+            "{ }  <span class=\"cc\">// ingen parametre</span>",
+            "{\n  <span class=\"cf\">\"success\"</span>: <span class=\"cs\">false</span>,\n  <span class=\"cf\">\"diagnostics\"</span>: [{\n    <span class=\"cf\">\"file\"</span>: <span class=\"cs\">\"Tab50.al\"</span>,\n    <span class=\"cf\">\"line\"</span>: <span class=\"cs\">42</span>,\n    <span class=\"cf\">\"code\"</span>: <span class=\"cs\">\"AL0118\"</span>,\n    <span class=\"cf\">\"message\"</span>: <span class=\"cs\">\"...\"</span>\n  }]\n}",
+            true),
+    ];
+}

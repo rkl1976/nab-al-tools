@@ -1,0 +1,632 @@
+@page "/glossary"
+@inject McpBridgeService McpBridge
+@inject SessionStateService Session
+@inject AppPaths Paths
+
+<PageTitle>Glossary - NAB XLIFF</PageTitle>
+
+<div class="page-header">
+    <h1>Glossary</h1>
+    <p class="subtitle">Business Central terminologi — se, rediger og byg dit eget projektglossar</p>
+</div>
+
+@if (!McpBridge.IsInitialized)
+{
+    <div class="empty-state">
+        <p>MCP server not connected.</p>
+        <a class="btn btn-primary" href="/">Go to Setup</a>
+    </div>
+}
+else
+{
+    @* ── Tab navigation ── *@
+    <div class="state-filter-bar" style="margin-bottom: 1.25rem;">
+        <button class="btn-filter @(activeTab == "builtin" ? "active" : "")" @onclick="SetTabBuiltin">
+            Built-in Glossary
+        </button>
+        <button class="btn-filter @(activeTab == "local" ? "active" : "")" @onclick="SetTabLocal">
+            Local Glossary
+        </button>
+        <button class="btn-filter @(activeTab == "extract" ? "active" : "")" @onclick="SetTabExtract">
+            Extract from XLF
+        </button>
+    </div>
+
+    @* ══════════════════════════════════════════ *@
+    @* ── TAB: Built-in glossary ── *@
+    @* ══════════════════════════════════════════ *@
+    @if (activeTab == "builtin")
+    {
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <div class="form-section" style="margin-bottom: 0;">
+                    <label class="form-label" style="margin-bottom: 0.2rem;">Target Language</label>
+                    <select class="form-control form-control-sm" style="width: 180px;" @bind="selectedLanguage" disabled="@isLoading">
+                        @foreach (var lang in availableLanguages)
+                        {
+                            <option value="@lang">@lang</option>
+                        }
+                    </select>
+                </div>
+                <button class="btn btn-primary btn-sm" @onclick="LoadBuiltinGlossaryAsync" disabled="@isLoading" style="align-self: flex-end;">
+                    @if (isLoading) { <span class="spinner"></span> }
+                    Load
+                </button>
+            </div>
+            <div class="toolbar-right">
+                @if (builtinEntries.Count > 0)
+                {
+                    <span class="result-count">@filteredBuiltin.Count of @builtinEntries.Count terms</span>
+                }
+            </div>
+        </div>
+
+        @if (builtinEntries.Count > 0)
+        {
+            <div class="search-bar" style="margin-bottom: 1rem;">
+                <input type="text" class="form-control" placeholder="Filter terms..."
+                       @bind="builtinFilter" @bind:event="oninput" @bind:after="ApplyBuiltinFilter" />
+            </div>
+
+            <div class="translation-table">
+                <div class="glossary-header">
+                    <div class="glossary-col-source">Source (en-US)</div>
+                    <div class="glossary-col-target">Target (@selectedLanguage)</div>
+                    <div class="glossary-col-desc">Description</div>
+                </div>
+                @foreach (var entry in filteredBuiltin.Skip(builtinOffset).Take(pageSize))
+                {
+                    <div class="glossary-row">
+                        <div class="glossary-col-source"><strong>@entry.Source</strong></div>
+                        <div class="glossary-col-target">@entry.Target</div>
+                        <div class="glossary-col-desc"><span class="comment">@Truncate(entry.Description, 120)</span></div>
+                    </div>
+                }
+            </div>
+
+            @if (filteredBuiltin.Count > pageSize)
+            {
+                <div class="pagination-bar">
+                    <button class="btn btn-secondary btn-sm" @onclick="() => builtinOffset = Math.Max(0, builtinOffset - pageSize)" disabled="@(builtinOffset == 0)">Previous</button>
+                    <span class="page-info">@(builtinOffset + 1)–@Math.Min(builtinOffset + pageSize, filteredBuiltin.Count) of @filteredBuiltin.Count</span>
+                    <button class="btn btn-secondary btn-sm" @onclick="() => builtinOffset += pageSize" disabled="@(builtinOffset + pageSize >= filteredBuiltin.Count)">Next</button>
+                </div>
+            }
+        }
+        else if (!isLoading)
+        {
+            <div class="empty-state">
+                <p>Select a language and click <strong>Load</strong> to see 187 official BC terms.</p>
+            </div>
+        }
+    }
+
+    @* ══════════════════════════════════════════ *@
+    @* ── TAB: Local glossary ── *@
+    @* ══════════════════════════════════════════ *@
+    @if (activeTab == "local")
+    {
+        <div class="setup-card">
+            <h2>Local Project Glossary</h2>
+            <p style="font-size: 0.85rem; color: #6b7280; margin-bottom: 1rem;">
+                Your project-specific terms. These override built-in terms with the same source text.
+            </p>
+
+            <div class="form-section">
+                <label class="form-label">Glossary File</label>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <input type="text" class="form-control" @bind="localGlossaryPath"
+                           placeholder="C:\dev\myapp\glossary.tsv" />
+                    <button class="btn btn-secondary btn-sm" @onclick="LoadLocalGlossaryAsync" disabled="@isLoading">
+                        @if (isLoading) { <span class="spinner"></span> }
+                        Load
+                    </button>
+                    <button class="btn btn-outline btn-sm" @onclick="CreateNewLocalGlossary">New</button>
+                </div>
+                <small class="form-hint">Path to your .tsv glossary file, or click "New" to create one</small>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(localMessage))
+        {
+            <div class="alert @(localIsError ? "alert-error" : "alert-success")">@localMessage</div>
+        }
+
+        @if (localEntries.Count > 0 || showNewEntryForm)
+        {
+            <div class="toolbar" style="margin-top: 1rem;">
+                <div class="toolbar-left">
+                    <button class="btn btn-primary btn-sm" @onclick="() => showNewEntryForm = true" disabled="@showNewEntryForm">
+                        + Add Term
+                    </button>
+                    <button class="btn btn-secondary btn-sm" @onclick="SaveLocalGlossaryAsync" disabled="@isSaving">
+                        @if (isSaving) { <span class="spinner"></span> }
+                        Save to File
+                    </button>
+                </div>
+                <div class="toolbar-right">
+                    <span class="result-count">@localEntries.Count terms</span>
+                </div>
+            </div>
+
+            @if (showNewEntryForm)
+            {
+                <div class="setup-card" style="margin-top: 0.75rem; background: #f9fafb;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 2fr auto; gap: 0.5rem; align-items: end;">
+                        <div class="form-section" style="margin-bottom: 0;">
+                            <label class="form-label">Source (en-US)</label>
+                            <input type="text" class="form-control form-control-sm" @bind="newSource" placeholder="Customer" />
+                        </div>
+                        <div class="form-section" style="margin-bottom: 0;">
+                            <label class="form-label">Target (@selectedLanguage)</label>
+                            <input type="text" class="form-control form-control-sm" @bind="newTarget" placeholder="Debitor" />
+                        </div>
+                        <div class="form-section" style="margin-bottom: 0;">
+                            <label class="form-label">Description</label>
+                            <input type="text" class="form-control form-control-sm" @bind="newDescription" placeholder="Optional context" />
+                        </div>
+                        <div style="display: flex; gap: 0.25rem;">
+                            <button class="btn-icon btn-accept" @onclick="AddNewEntry" disabled="@(string.IsNullOrWhiteSpace(newSource) || string.IsNullOrWhiteSpace(newTarget))">&#10003;</button>
+                            <button class="btn-icon btn-reject" @onclick="() => showNewEntryForm = false">&#10007;</button>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <div class="translation-table" style="margin-top: 0.75rem;">
+                <div class="glossary-header" style="grid-template-columns: 1fr 1fr 2fr 60px;">
+                    <div>Source</div>
+                    <div>Target (@selectedLanguage)</div>
+                    <div>Description</div>
+                    <div></div>
+                </div>
+                @foreach (var entry in localEntries)
+                {
+                    var idx = localEntries.IndexOf(entry);
+                    @if (editingIndex == idx)
+                    {
+                        <div class="glossary-row" style="grid-template-columns: 1fr 1fr 2fr 60px; background: rgba(102, 126, 234, 0.04);">
+                            <div><input type="text" class="form-control form-control-sm" @bind="editSource" /></div>
+                            <div><input type="text" class="form-control form-control-sm" @bind="editTarget" /></div>
+                            <div><input type="text" class="form-control form-control-sm" @bind="editDescription" /></div>
+                            <div style="display: flex; gap: 0.25rem;">
+                                <button class="btn-icon btn-accept" @onclick="SaveEdit">&#10003;</button>
+                                <button class="btn-icon btn-reject" @onclick="CancelEdit">&#10007;</button>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="glossary-row" style="grid-template-columns: 1fr 1fr 2fr 60px;">
+                            <div class="glossary-col-source"><strong>@entry.Source</strong></div>
+                            <div class="glossary-col-target">@entry.Target</div>
+                            <div class="glossary-col-desc"><span class="comment">@Truncate(entry.Description, 100)</span></div>
+                            <div style="display: flex; gap: 0.25rem;">
+                                <button class="btn-icon btn-save" @onclick="() => StartEdit(idx)">&#9998;</button>
+                                <button class="btn-icon btn-reject" @onclick="() => DeleteEntry(idx)">&#128465;</button>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        }
+        else if (!isLoading)
+        {
+            <div class="empty-state">
+                <p>No local glossary loaded. Enter a file path and click <strong>Load</strong>, or click <strong>New</strong> to start fresh.</p>
+            </div>
+        }
+    }
+
+    @* ══════════════════════════════════════════ *@
+    @* ── TAB: Extract from XLF ── *@
+    @* ══════════════════════════════════════════ *@
+    @if (activeTab == "extract")
+    {
+        <div class="setup-card">
+            <h2>Extract Glossary from Translations</h2>
+            <p style="font-size: 0.85rem; color: #6b7280; margin-bottom: 1rem;">
+                Analyse your existing translations and find the most-used terms to seed a local glossary.
+                Terms already in the built-in BC glossary are excluded.
+            </p>
+
+            <div class="form-section">
+                <label class="form-label">Minimum occurrences</label>
+                <input type="number" class="form-control form-control-sm" style="width: 120px;"
+                       @bind="minOccurrences" min="2" max="100" />
+                <small class="form-hint">Only include terms that appear this many times or more</small>
+            </div>
+
+            <div class="form-section">
+                <label class="checkbox-label">
+                    <input type="checkbox" @bind="onlyMultiWord" />
+                    Only multi-word terms (e.g. "Sales Order" but not "Amount")
+                </label>
+            </div>
+
+            <div class="form-actions">
+                <button class="btn btn-primary" @onclick="ExtractTermsAsync" disabled="@(isExtracting || string.IsNullOrEmpty(Session.XlfFilePath))">
+                    @if (isExtracting) { <span class="spinner"></span> <span>Extracting...</span> }
+                    else { <span>Extract Terms</span> }
+                </button>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(extractMessage))
+        {
+            <div class="alert @(extractIsError ? "alert-error" : "alert-info")">@extractMessage</div>
+        }
+
+        @if (extractedTerms.Count > 0)
+        {
+            <div class="toolbar" style="margin-top: 1rem;">
+                <div class="toolbar-left">
+                    <button class="btn btn-primary btn-sm" @onclick="AddSelectedToLocal">
+                        Add Selected to Local Glossary (@selectedExtracted.Count)
+                    </button>
+                    <button class="btn btn-secondary btn-sm" @onclick="SelectAllExtracted">
+                        @(selectedExtracted.Count == extractedTerms.Count ? "Deselect All" : "Select All")
+                    </button>
+                </div>
+                <div class="toolbar-right">
+                    <span class="result-count">@extractedTerms.Count candidate terms found</span>
+                </div>
+            </div>
+
+            <div class="translation-table" style="margin-top: 0.75rem;">
+                <div class="glossary-header" style="grid-template-columns: 40px 1fr 1fr 80px;">
+                    <div class="col-check"><input type="checkbox" @bind="selectAll" @bind:after="ToggleSelectAll" /></div>
+                    <div>Source (en-US)</div>
+                    <div>Target (@selectedLanguage)</div>
+                    <div>Count</div>
+                </div>
+                @foreach (var term in extractedTerms)
+                {
+                    var t = term;
+                    <div class="glossary-row" style="grid-template-columns: 40px 1fr 1fr 80px;">
+                        <div class="col-check">
+                            <input type="checkbox" checked="@selectedExtracted.Contains(t.Source)"
+                                   @onchange="() => ToggleExtracted(t.Source)" />
+                        </div>
+                        <div class="glossary-col-source"><strong>@t.Source</strong></div>
+                        <div class="glossary-col-target">@t.Target</div>
+                        <div><span class="state-badge state-translated">@t.Count x</span></div>
+                    </div>
+                }
+            </div>
+        }
+    }
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-error" style="margin-top: 1rem;">@errorMessage</div>
+    }
+}
+
+@code {
+    // ── General ──
+    private string activeTab = "builtin";
+    private string selectedLanguage = "da-DK";
+    private bool isLoading;
+    private string? errorMessage;
+    private int pageSize = 50;
+
+    private static readonly string[] availableLanguages =
+    [
+        "da-DK", "de-DE", "sv-SE", "nb-NO", "nl-NL", "fr-FR", "es-ES_tradnl",
+        "fi-FI", "it-IT", "cs-CZ", "is-IS", "de-AT", "de-CH", "en-AU",
+        "en-CA", "en-GB", "en-NZ", "es-MX", "fr-BE", "fr-CA", "fr-CH",
+        "it-CH", "nl-BE"
+    ];
+
+    // ── Built-in ──
+    private List<GlossaryEntry> builtinEntries = [];
+    private List<GlossaryEntry> filteredBuiltin = [];
+    private string builtinFilter = "";
+    private int builtinOffset;
+
+    // ── Local ──
+    private List<LocalGlossaryEntry> localEntries = [];
+    private string localGlossaryPath = "";
+    private string? localMessage;
+    private bool localIsError;
+    private bool isSaving;
+    private bool showNewEntryForm;
+    private string newSource = "", newTarget = "", newDescription = "";
+    private int editingIndex = -1;
+    private string editSource = "", editTarget = "", editDescription = "";
+
+    // ── Extract ──
+    private List<ExtractedTerm> extractedTerms = [];
+    private HashSet<string> selectedExtracted = [];
+    private bool isExtracting;
+    private string? extractMessage;
+    private bool extractIsError;
+    private int minOccurrences = 2;
+    private bool onlyMultiWord;
+    private bool selectAll;
+
+    private record LocalGlossaryEntry
+    {
+        public string Source { get; set; } = "";
+        public string Target { get; set; } = "";
+        public string Description { get; set; } = "";
+    }
+
+    private record ExtractedTerm(string Source, string Target, int Count);
+
+    protected override void OnInitialized()
+    {
+        if (!string.IsNullOrEmpty(Session.TargetLanguage) && availableLanguages.Contains(Session.TargetLanguage))
+            selectedLanguage = Session.TargetLanguage;
+
+        // Default local glossary path
+        if (!string.IsNullOrEmpty(Session.AppFolderPath))
+            localGlossaryPath = Path.Combine(Session.AppFolderPath, "glossary.tsv");
+    }
+
+    // ══════ Built-in ══════
+    private async Task LoadBuiltinGlossaryAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        builtinOffset = 0;
+        StateHasChanged();
+        try
+        {
+            builtinEntries = await McpBridge.GetGlossaryTermsAsync(selectedLanguage);
+            ApplyBuiltinFilter();
+        }
+        catch (Exception ex) { errorMessage = ex.Message; }
+        finally { isLoading = false; StateHasChanged(); }
+    }
+
+    private void ApplyBuiltinFilter()
+    {
+        builtinOffset = 0;
+        filteredBuiltin = string.IsNullOrWhiteSpace(builtinFilter)
+            ? builtinEntries
+            : builtinEntries.Where(e =>
+                e.Source.Contains(builtinFilter, StringComparison.OrdinalIgnoreCase) ||
+                e.Target.Contains(builtinFilter, StringComparison.OrdinalIgnoreCase) ||
+                e.Description.Contains(builtinFilter, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+
+    // ══════ Local Glossary ══════
+    private async Task LoadLocalGlossaryAsync()
+    {
+        if (string.IsNullOrWhiteSpace(localGlossaryPath)) return;
+        isLoading = true;
+        localMessage = null;
+        StateHasChanged();
+        try
+        {
+            if (!File.Exists(localGlossaryPath))
+                throw new FileNotFoundException($"File not found: {localGlossaryPath}");
+
+            var lines = await File.ReadAllLinesAsync(localGlossaryPath);
+            ParseTsvToLocal(lines);
+            localMessage = $"Loaded {localEntries.Count} terms from {Path.GetFileName(localGlossaryPath)}";
+            localIsError = false;
+        }
+        catch (Exception ex) { localMessage = ex.Message; localIsError = true; }
+        finally { isLoading = false; StateHasChanged(); }
+    }
+
+    private void ParseTsvToLocal(string[] lines)
+    {
+        localEntries = [];
+        if (lines.Length < 2) return;
+
+        var headers = lines[0].Split('\t');
+        var sourceIdx = Array.FindIndex(headers, h => h.Trim().Equals("en-US", StringComparison.OrdinalIgnoreCase));
+        var targetIdx = Array.FindIndex(headers, h => h.Trim().Equals(selectedLanguage, StringComparison.OrdinalIgnoreCase));
+        var descIdx = Array.FindIndex(headers, h => h.Trim().Equals("Description", StringComparison.OrdinalIgnoreCase));
+
+        if (sourceIdx < 0) sourceIdx = 0;
+        if (targetIdx < 0 && headers.Length > 1) targetIdx = 1;
+
+        for (int i = 1; i < lines.Length; i++)
+        {
+            var cols = lines[i].Split('\t');
+            if (cols.Length <= Math.Max(sourceIdx, targetIdx)) continue;
+            var src = cols[sourceIdx].Trim();
+            var tgt = targetIdx >= 0 && targetIdx < cols.Length ? cols[targetIdx].Trim() : "";
+            var desc = descIdx >= 0 && descIdx < cols.Length ? cols[descIdx].Trim() : "";
+            if (string.IsNullOrEmpty(src)) continue;
+            localEntries.Add(new LocalGlossaryEntry { Source = src, Target = tgt, Description = desc });
+        }
+    }
+
+    private void CreateNewLocalGlossary()
+    {
+        localEntries = [];
+        if (string.IsNullOrWhiteSpace(localGlossaryPath) && !string.IsNullOrEmpty(Session.AppFolderPath))
+            localGlossaryPath = Path.Combine(Session.AppFolderPath, "glossary.tsv");
+        showNewEntryForm = true;
+        localMessage = "New glossary created. Add terms and click Save.";
+        localIsError = false;
+    }
+
+    private void AddNewEntry()
+    {
+        if (string.IsNullOrWhiteSpace(newSource) || string.IsNullOrWhiteSpace(newTarget)) return;
+        localEntries.Insert(0, new LocalGlossaryEntry
+        {
+            Source = newSource.Trim(),
+            Target = newTarget.Trim(),
+            Description = newDescription.Trim()
+        });
+        newSource = ""; newTarget = ""; newDescription = "";
+    }
+
+    private void StartEdit(int idx)
+    {
+        editingIndex = idx;
+        editSource = localEntries[idx].Source;
+        editTarget = localEntries[idx].Target;
+        editDescription = localEntries[idx].Description;
+    }
+
+    private void SaveEdit()
+    {
+        if (editingIndex >= 0 && editingIndex < localEntries.Count)
+        {
+            localEntries[editingIndex].Source = editSource.Trim();
+            localEntries[editingIndex].Target = editTarget.Trim();
+            localEntries[editingIndex].Description = editDescription.Trim();
+        }
+        editingIndex = -1;
+    }
+
+    private void CancelEdit() => editingIndex = -1;
+
+    private void DeleteEntry(int idx)
+    {
+        if (idx >= 0 && idx < localEntries.Count)
+            localEntries.RemoveAt(idx);
+    }
+
+    private async Task SaveLocalGlossaryAsync()
+    {
+        if (string.IsNullOrWhiteSpace(localGlossaryPath)) return;
+        isSaving = true;
+        localMessage = null;
+        StateHasChanged();
+        try
+        {
+            var dir = Path.GetDirectoryName(localGlossaryPath);
+            if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+
+            var lines = new List<string>
+            {
+                $"en-US\t{selectedLanguage}\tDescription"
+            };
+            foreach (var e in localEntries)
+            {
+                lines.Add($"{e.Source}\t{e.Target}\t{e.Description}");
+            }
+            await File.WriteAllLinesAsync(localGlossaryPath, lines);
+            localMessage = $"Saved {localEntries.Count} terms to {Path.GetFileName(localGlossaryPath)}";
+            localIsError = false;
+        }
+        catch (Exception ex) { localMessage = ex.Message; localIsError = true; }
+        finally { isSaving = false; StateHasChanged(); }
+    }
+
+    // ══════ Extract from XLF ══════
+    private async Task ExtractTermsAsync()
+    {
+        if (string.IsNullOrEmpty(Session.XlfFilePath)) return;
+        isExtracting = true;
+        extractMessage = "Loading all translations...";
+        extractIsError = false;
+        extractedTerms = [];
+        selectedExtracted = [];
+        StateHasChanged();
+
+        try
+        {
+            // 1. Load all translated texts
+            var allTexts = new List<TranslatedTextWithState>();
+            int offset = 0;
+            while (true)
+            {
+                var batch = await McpBridge.GetTranslatedTextsByStateAsync(
+                    Session.XlfFilePath, offset, 500, "translated");
+                allTexts.AddRange(batch);
+                if (batch.Count < 500) break;
+                offset += 500;
+            }
+
+            extractMessage = $"Loaded {allTexts.Count} translations. Analysing...";
+            StateHasChanged();
+
+            // 2. Load built-in glossary to exclude existing terms
+            var builtIn = await McpBridge.GetGlossaryTermsAsync(selectedLanguage);
+            var builtInSources = builtIn.Select(g => g.Source).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            // 3. Group by source text and count occurrences
+            var grouped = allTexts
+                .Where(t => !string.IsNullOrWhiteSpace(t.TargetText))
+                .GroupBy(t => t.SourceText, StringComparer.OrdinalIgnoreCase)
+                .Select(g => new
+                {
+                    Source = g.Key,
+                    Target = g.GroupBy(x => x.TargetText).OrderByDescending(x => x.Count()).First().Key,
+                    Count = g.Count()
+                })
+                .Where(x => x.Count >= minOccurrences)
+                .Where(x => x.Source.Length >= 3 && x.Source.Length <= 80)
+                .Where(x => !builtInSources.Contains(x.Source))
+                .Where(x => !onlyMultiWord || x.Source.Contains(' '))
+                .OrderByDescending(x => x.Count)
+                .Take(200)
+                .ToList();
+
+            extractedTerms = grouped.Select(g => new ExtractedTerm(g.Source, g.Target, g.Count)).ToList();
+            selectedExtracted = new HashSet<string>(extractedTerms.Select(t => t.Source));
+            selectAll = true;
+
+            extractMessage = $"Found {extractedTerms.Count} candidate terms (excluded {builtInSources.Count} built-in BC terms)";
+            extractIsError = false;
+        }
+        catch (Exception ex)
+        {
+            extractMessage = ex.Message;
+            extractIsError = true;
+        }
+        finally
+        {
+            isExtracting = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ToggleExtracted(string source)
+    {
+        if (!selectedExtracted.Remove(source))
+            selectedExtracted.Add(source);
+    }
+
+    private void SelectAllExtracted()
+    {
+        if (selectedExtracted.Count == extractedTerms.Count)
+            selectedExtracted.Clear();
+        else
+            selectedExtracted = new HashSet<string>(extractedTerms.Select(t => t.Source));
+        selectAll = selectedExtracted.Count == extractedTerms.Count;
+    }
+
+    private void ToggleSelectAll()
+    {
+        if (selectAll)
+            selectedExtracted = new HashSet<string>(extractedTerms.Select(t => t.Source));
+        else
+            selectedExtracted.Clear();
+    }
+
+    private void AddSelectedToLocal()
+    {
+        var existingSources = localEntries.Select(e => e.Source).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var toAdd = extractedTerms
+            .Where(t => selectedExtracted.Contains(t.Source) && !existingSources.Contains(t.Source))
+            .Select(t => new LocalGlossaryEntry { Source = t.Source, Target = t.Target, Description = $"Extracted ({t.Count}x)" })
+            .ToList();
+
+        localEntries.AddRange(toAdd);
+        localMessage = $"Added {toAdd.Count} terms to local glossary. Click 'Save to File' to persist.";
+        localIsError = false;
+        activeTab = "local";
+    }
+
+    private void SetTabBuiltin() => activeTab = "builtin";
+    private void SetTabLocal() => activeTab = "local";
+    private void SetTabExtract() => activeTab = "extract";
+
+    private static string Truncate(string text, int max)
+    {
+        if (string.IsNullOrEmpty(text) || text.Length <= max) return text;
+        return text[..max] + "...";
+    }
+}

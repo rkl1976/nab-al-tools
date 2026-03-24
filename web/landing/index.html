@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NAB XLIFF Translator — Desktop App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ── Reset & Base ─────────────────────────────────────── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; font-size: 16px; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #0d1117;
+      color: #c9d1d9;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    code, pre {
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+
+    /* ── Utility ──────────────────────────────────────────── */
+    .container {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+    .section-label {
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: #667eea;
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      font-weight: 800;
+      color: #f0f6fc;
+      line-height: 1.25;
+      margin-bottom: 16px;
+    }
+    .section-subtitle {
+      font-size: 1.1rem;
+      color: #8b949e;
+      max-width: 600px;
+      line-height: 1.7;
+    }
+
+    /* ── Ambient glow (decorative) ────────────────────────── */
+    .glow {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Nav ───────────────────────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      background: rgba(13, 17, 23, 0.8);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    nav .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+    .nav-brand {
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: #f0f6fc;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .nav-brand .dot {
+      width: 8px;
+      height: 8px;
+      background: #667eea;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #8b949e;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: #f0f6fc; }
+    .nav-cta {
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 8px 20px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+    .nav-cta:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    @media (max-width: 640px) {
+      .nav-links { display: none; }
+    }
+
+    /* ── Hero ──────────────────────────────────────────────── */
+    .hero {
+      position: relative;
+      padding: 160px 0 120px;
+      text-align: center;
+      background: linear-gradient(170deg, #1a1f36 0%, #0d1117 60%);
+      overflow: hidden;
+    }
+    .hero .glow-1 {
+      width: 600px; height: 600px;
+      background: rgba(102, 126, 234, 0.12);
+      top: -100px; left: -150px;
+    }
+    .hero .glow-2 {
+      width: 500px; height: 500px;
+      background: rgba(118, 75, 162, 0.10);
+      bottom: -100px; right: -100px;
+    }
+    .hero .container { position: relative; z-index: 1; }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      border-radius: 100px;
+      background: rgba(102, 126, 234, 0.12);
+      border: 1px solid rgba(102, 126, 234, 0.25);
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #a5b4fc;
+      margin-bottom: 32px;
+    }
+    .hero-badge .badge-dot {
+      width: 6px; height: 6px;
+      background: #34d399;
+      border-radius: 50%;
+      animation: pulse-dot 2s infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .hero h1 {
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      font-weight: 800;
+      color: #f0f6fc;
+      line-height: 1.1;
+      margin-bottom: 20px;
+      letter-spacing: -0.03em;
+    }
+    .hero h1 .gradient-text {
+      background: linear-gradient(135deg, #667eea 0%, #a78bfa 50%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-tagline {
+      font-size: clamp(1.05rem, 2.5vw, 1.25rem);
+      color: #8b949e;
+      max-width: 560px;
+      margin: 0 auto 40px;
+      line-height: 1.7;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 32px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 24px rgba(102, 126, 234, 0.3);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(102, 126, 234, 0.45);
+    }
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 32px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #c9d1d9;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.08);
+      border-color: rgba(255,255,255,0.2);
+    }
+    .btn-icon {
+      width: 20px;
+      height: 20px;
+    }
+
+    .hero-meta {
+      margin-top: 32px;
+      font-size: 0.8rem;
+      color: #484f58;
+    }
+
+    /* ── Features ──────────────────────────────────────────── */
+    .features {
+      padding: 100px 0;
+      position: relative;
+    }
+    .features-header {
+      text-align: center;
+      margin-bottom: 56px;
+    }
+    .features-header .section-subtitle {
+      margin: 0 auto;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    @media (max-width: 900px) {
+      .features-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 580px) {
+      .features-grid { grid-template-columns: 1fr; }
+    }
+
+    .feature-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 32px 28px;
+      transition: background 0.25s, border-color 0.25s, transform 0.25s;
+      position: relative;
+      overflow: hidden;
+    }
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #667eea, transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .feature-card:hover {
+      background: rgba(255,255,255,0.05);
+      border-color: rgba(102, 126, 234, 0.2);
+      transform: translateY(-4px);
+    }
+    .feature-card:hover::before { opacity: 1; }
+
+    .feature-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      margin-bottom: 20px;
+    }
+    .fi-purple  { background: rgba(102, 126, 234, 0.15); color: #a5b4fc; }
+    .fi-green   { background: rgba(52, 211, 153, 0.15); color: #34d399; }
+    .fi-amber   { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+    .fi-blue    { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
+    .fi-rose    { background: rgba(251, 113, 133, 0.15); color: #fb7185; }
+    .fi-cyan    { background: rgba(34, 211, 238, 0.15); color: #22d3ee; }
+
+    .feature-card h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #f0f6fc;
+      margin-bottom: 8px;
+    }
+    .feature-card p {
+      font-size: 0.9rem;
+      color: #8b949e;
+      line-height: 1.6;
+    }
+
+    /* ── Screenshots ──────────────────────────────────────── */
+    .screenshots {
+      padding: 100px 0;
+      position: relative;
+      background: linear-gradient(180deg, #0d1117 0%, #111822 50%, #0d1117 100%);
+    }
+    .screenshots-header {
+      text-align: center;
+      margin-bottom: 56px;
+    }
+    .screenshots-header .section-subtitle { margin: 0 auto; }
+
+    .screenshots-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    @media (max-width: 800px) {
+      .screenshots-grid { grid-template-columns: 1fr; }
+    }
+
+    .screenshot-card {
+      aspect-ratio: 16 / 11;
+      border-radius: 16px;
+      background: linear-gradient(145deg, #161b22 0%, #1c2333 100%);
+      border: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      transition: border-color 0.3s, transform 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+    .screenshot-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 60%, rgba(13,17,23,0.5) 100%);
+      pointer-events: none;
+    }
+    .screenshot-card:hover {
+      border-color: rgba(102, 126, 234, 0.3);
+      transform: translateY(-4px);
+    }
+    .screenshot-card .ss-icon {
+      font-size: 2rem;
+      opacity: 0.3;
+    }
+    .screenshot-card .ss-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #484f58;
+      letter-spacing: 0.02em;
+    }
+    .screenshot-card .ss-caption {
+      position: absolute;
+      bottom: 16px;
+      left: 20px;
+      z-index: 1;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #8b949e;
+    }
+
+    /* fake window chrome */
+    .window-dots {
+      position: absolute;
+      top: 16px;
+      left: 20px;
+      display: flex;
+      gap: 6px;
+      z-index: 1;
+    }
+    .window-dots span {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+    }
+
+    /* ── Installation ─────────────────────────────────────── */
+    .installation {
+      padding: 100px 0;
+    }
+    .installation-header {
+      text-align: center;
+      margin-bottom: 56px;
+    }
+    .installation-header .section-subtitle { margin: 0 auto; }
+
+    .steps {
+      max-width: 720px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .step {
+      display: flex;
+      gap: 24px;
+      position: relative;
+      padding-bottom: 40px;
+    }
+    .step:last-child { padding-bottom: 0; }
+
+    .step-indicator {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .step-number {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      font-size: 0.85rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .step-line {
+      flex: 1;
+      width: 2px;
+      background: rgba(102, 126, 234, 0.15);
+      margin-top: 8px;
+    }
+    .step:last-child .step-line { display: none; }
+
+    .step-content {
+      flex: 1;
+      padding-top: 4px;
+    }
+    .step-content h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #f0f6fc;
+      margin-bottom: 8px;
+    }
+    .step-content p {
+      font-size: 0.9rem;
+      color: #8b949e;
+      margin-bottom: 12px;
+      line-height: 1.7;
+    }
+    .step-content a.link {
+      color: #667eea;
+      border-bottom: 1px solid rgba(102, 126, 234, 0.3);
+      transition: border-color 0.2s;
+    }
+    .step-content a.link:hover {
+      border-color: #667eea;
+    }
+
+    pre.code-block {
+      background: #161b22;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 20px 24px;
+      overflow-x: auto;
+      font-size: 0.82rem;
+      line-height: 1.8;
+      color: #c9d1d9;
+      margin-top: 12px;
+    }
+    pre.code-block .comment { color: #484f58; }
+    pre.code-block .string  { color: #a5d6ff; }
+    pre.code-block .key     { color: #d2a8ff; }
+
+    /* ── System Requirements ───────────────────────────────── */
+    .sysreq {
+      padding: 80px 0 100px;
+      position: relative;
+      background: linear-gradient(180deg, #0d1117 0%, #111822 100%);
+    }
+    .sysreq-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .req-grid {
+      max-width: 640px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 500px) {
+      .req-grid { grid-template-columns: 1fr; }
+    }
+    .req-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 18px 22px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+    }
+    .req-item .req-check {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: rgba(52, 211, 153, 0.12);
+      color: #34d399;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .req-item .req-text {
+      font-size: 0.9rem;
+      color: #c9d1d9;
+    }
+    .req-item .req-text strong {
+      color: #f0f6fc;
+      font-weight: 600;
+    }
+
+    /* ── Footer ────────────────────────────────────────────── */
+    footer {
+      padding: 48px 0;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    footer .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .footer-left {
+      font-size: 0.85rem;
+      color: #484f58;
+    }
+    .footer-links {
+      display: flex;
+      gap: 24px;
+      list-style: none;
+    }
+    .footer-links a {
+      font-size: 0.85rem;
+      color: #8b949e;
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: #f0f6fc; }
+
+    /* ── Animations ────────────────────────────────────────── */
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up {
+      opacity: 0;
+      animation: fade-up 0.6s ease-out forwards;
+    }
+    .fade-up-d1 { animation-delay: 0.1s; }
+    .fade-up-d2 { animation-delay: 0.2s; }
+    .fade-up-d3 { animation-delay: 0.3s; }
+    .fade-up-d4 { animation-delay: 0.4s; }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════ Nav ═══════════════════ -->
+<nav>
+  <div class="container">
+    <div class="nav-brand">
+      <span class="dot"></span>
+      NAB XLIFF
+    </div>
+    <ul class="nav-links">
+      <li><a href="#features">Funktioner</a></li>
+      <li><a href="#screenshots">Skærmbilleder</a></li>
+      <li><a href="#installation">Installation</a></li>
+      <li><a href="#systemkrav">Systemkrav</a></li>
+    </ul>
+    <a href="#installation" class="nav-cta">Download</a>
+  </div>
+</nav>
+
+<!-- ═══════════════════ Hero ══════════════════ -->
+<section class="hero">
+  <div class="glow glow-1"></div>
+  <div class="glow glow-2"></div>
+  <div class="container">
+    <div class="hero-badge fade-up">
+      <span class="badge-dot"></span>
+      Desktop App &middot; Windows
+    </div>
+    <h1 class="fade-up fade-up-d1">
+      NAB XLIFF<br><span class="gradient-text">Translator</span>
+    </h1>
+    <p class="hero-tagline fade-up fade-up-d2">
+      Overs&aelig;t Business Central apps med AI-kraft.<br>
+      Direkte fra dit skrivebord.
+    </p>
+    <div class="hero-actions fade-up fade-up-d3">
+      <a href="https://github.com/rkl1976/nab-al-tools/releases/latest" class="btn-primary">
+        <svg class="btn-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M10 1.5a1 1 0 011 1v7.586l2.293-2.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 10.086V2.5a1 1 0 011-1z"/><path d="M3 14.5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"/></svg>
+        Download til Windows
+      </a>
+      <a href="https://github.com/rkl1976/nab-al-tools" class="btn-secondary">
+        <svg class="btn-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 0C4.477 0 0 4.477 0 10c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.009-.866-.013-1.7-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.337-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.268 2.75 1.026A9.578 9.578 0 0110 4.836a9.578 9.578 0 012.504.337c1.909-1.294 2.747-1.026 2.747-1.026.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.579.688.481C17.138 18.163 20 14.418 20 10c0-5.523-4.477-10-10-10z" clip-rule="evenodd"/></svg>
+        GitHub
+      </a>
+    </div>
+    <p class="hero-meta fade-up fade-up-d4">Open source &middot; MIT License &middot; .NET 10 + MAUI Blazor Hybrid</p>
+  </div>
+</section>
+
+<!-- ═══════════════════ Features ══════════════ -->
+<section class="features" id="features">
+  <div class="container">
+    <div class="features-header">
+      <p class="section-label">Funktioner</p>
+      <h2 class="section-title">Alt du beh&oslash;ver til XLIFF-overs&aelig;ttelse</h2>
+      <p class="section-subtitle">En komplet v&aelig;rkt&oslash;jskasse til at overs&aelig;tte, gennemg&aring; og vedligeholde dine Business Central-apps.</p>
+    </div>
+    <div class="features-grid">
+
+      <div class="feature-card">
+        <div class="feature-icon fi-purple">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        </div>
+        <h3>AI Chat</h3>
+        <p>Overs&aelig;t via samtale med AI. Stil sp&oslash;rgsm&aring;l om terminologi, bed om alternative formuleringer, eller lad AI'en overs&aelig;tte hele sektioner.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon fi-green">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+        </div>
+        <h3>Batch-overs&aelig;ttelse</h3>
+        <p>Overs&aelig;t hundredvis af tekster automatisk med Azure OpenAI. F&aring; h&oslash;jkvalitets-overs&aelig;ttelser der respekterer BC-terminologi.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon fi-amber">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        </div>
+        <h3>Review-workflow</h3>
+        <p>Gennemg&aring; og godkend overs&aelig;ttelser &eacute;n for &eacute;n. Se kilde- og m&aring;ltekst side om side med kontekst fra AL-koden.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon fi-blue">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+        <h3>S&oslash;gning</h3>
+        <p>Find tekster med regex og keyword-s&oslash;gning. Filtr&eacute;r p&aring; overs&aelig;ttelsesstatus, noter, og meget mere.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon fi-rose">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </div>
+        <h3>MCP-integration</h3>
+        <p>Bruger NAB AL Tools MCP-serveren som backend. Giver adgang til alle overs&aelig;ttelsesfunktioner via Model Context Protocol.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon fi-cyan">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+        </div>
+        <h3>Glossar</h3>
+        <p>Microsofts officielle BC-terminologi er indbygget. Sikrer konsistente overs&aelig;ttelser der matcher standardproduktet.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ Screenshots ═══════════ -->
+<section class="screenshots" id="screenshots">
+  <div class="container">
+    <div class="screenshots-header">
+      <p class="section-label">S&aring;dan ser det ud</p>
+      <h2 class="section-title">Designet til produktivitet</h2>
+      <p class="section-subtitle">Et moderne interface der g&oslash;r overs&aelig;ttelsesarbejdet hurtigt og behageligt.</p>
+    </div>
+    <div class="screenshots-grid">
+
+      <div class="screenshot-card">
+        <div class="window-dots"><span></span><span></span><span></span></div>
+        <svg class="ss-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        <span class="ss-label">Chat-interface</span>
+        <span class="ss-caption">AI-drevet samtale</span>
+      </div>
+
+      <div class="screenshot-card">
+        <div class="window-dots"><span></span><span></span><span></span></div>
+        <svg class="ss-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+        <span class="ss-label">Overs&aelig;ttelsestabel</span>
+        <span class="ss-caption">Filtrering og redigering</span>
+      </div>
+
+      <div class="screenshot-card">
+        <div class="window-dots"><span></span><span></span><span></span></div>
+        <svg class="ss-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+        <span class="ss-label">Review-workflow</span>
+        <span class="ss-caption">Godkend &eacute;n ad gangen</span>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ Installation ══════════ -->
+<section class="installation" id="installation">
+  <div class="container">
+    <div class="installation-header">
+      <p class="section-label">Kom i gang</p>
+      <h2 class="section-title">Installation</h2>
+      <p class="section-subtitle">Klar p&aring; f&aring; minutter. Download, pak ud, og k&oslash;r.</p>
+    </div>
+
+    <div class="steps">
+
+      <!-- Step 1 -->
+      <div class="step">
+        <div class="step-indicator">
+          <div class="step-number">1</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-content">
+          <h3>Download</h3>
+          <p>
+            Hent den seneste version fra
+            <a href="https://github.com/rkl1976/nab-al-tools/releases" class="link">GitHub Releases</a>.
+            V&aelig;lg <code>NabXliffApp-win-x64.zip</code>.
+          </p>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="step">
+        <div class="step-indicator">
+          <div class="step-number">2</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-content">
+          <h3>Foruds&aelig;tninger</h3>
+          <p>
+            <strong>Node.js 20+</strong> kr&aelig;ves til MCP-serveren.<br>
+            <strong>WebView2 Runtime</strong> skal v&aelig;re installeret &mdash;
+            <a href="https://developer.microsoft.com/en-us/microsoft-edge/webview2/" class="link">download her</a>.
+            Allerede inkluderet i de nyeste versioner af Windows&nbsp;10/11.
+          </p>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="step">
+        <div class="step-indicator">
+          <div class="step-number">3</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-content">
+          <h3>Pak ud og k&oslash;r</h3>
+          <p>
+            Udpak ZIP-filen til en valgfri mappe og start <code>NabXliffApp.exe</code>.
+            Ingen installation n&oslash;dvendig.
+          </p>
+        </div>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="step">
+        <div class="step-indicator">
+          <div class="step-number">4</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-content">
+          <h3>Konfigur&eacute;r Azure OpenAI <span style="color:#484f58;font-weight:400;font-size:0.85rem;">(valgfrit for AI-funktioner)</span></h3>
+          <p>
+            &Aring;bn Settings i appen og udfyld dine Azure OpenAI-oplysninger.
+            Alternativt kan du redigere <code>appsettings.json</code> direkte:
+          </p>
+          <pre class="code-block">{
+  <span class="key">"AzureOpenAI"</span>: {
+    <span class="key">"Endpoint"</span>:       <span class="string">"https://din-instans.openai.azure.com/"</span>,
+    <span class="key">"DeploymentName"</span>: <span class="string">"gpt-4o"</span>,
+    <span class="key">"ApiKey"</span>:          <span class="string">"din-api-n&oslash;gle"</span>
+  },
+  <span class="key">"McpServer"</span>: {
+    <span class="key">"Command"</span>:  <span class="string">"node"</span>,
+    <span class="key">"Args"</span>:     <span class="string">"sti/til/nab-al-tools/dist/mcp/server.js"</span>
+  }
+}</pre>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ System Requirements ═══ -->
+<section class="sysreq" id="systemkrav">
+  <div class="container">
+    <div class="sysreq-header">
+      <p class="section-label">Systemkrav</p>
+      <h2 class="section-title">Hvad skal du bruge?</h2>
+    </div>
+    <div class="req-grid">
+      <div class="req-item">
+        <div class="req-check">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="req-text"><strong>Windows 10 / 11</strong><br>x64</div>
+      </div>
+      <div class="req-item">
+        <div class="req-check">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="req-text"><strong>.NET 10</strong><br>Inkluderet i appen</div>
+      </div>
+      <div class="req-item">
+        <div class="req-check">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="req-text"><strong>Node.js 20+</strong><br>Til MCP-server</div>
+      </div>
+      <div class="req-item">
+        <div class="req-check">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="req-text"><strong>WebView2</strong><br>Runtime</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ Footer ════════════════ -->
+<footer>
+  <div class="container">
+    <div class="footer-left">
+      NAB XLIFF Translator &middot; MIT License
+    </div>
+    <ul class="footer-links">
+      <li><a href="https://github.com/rkl1976/nab-al-tools">GitHub</a></li>
+      <li><a href="https://github.com/rkl1976/nab-al-tools/releases">Releases</a></li>
+      <li><a href="https://www.nabsolutions.dk">NAB Solutions</a></li>
+    </ul>
+  </div>
+</footer>
+
+</body>
+</html>

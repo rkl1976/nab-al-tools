@@ -1,0 +1,155 @@
+@page "/settings"
+@inject IConfiguration Configuration
+@inject AppPaths Paths
+
+<PageTitle>Settings - NAB XLIFF</PageTitle>
+
+<div class="page-header">
+    <h1>Settings</h1>
+    <p class="subtitle">Configure Azure OpenAI connection for AI-powered translations</p>
+</div>
+
+<div class="setup-card">
+    <h2>Azure OpenAI</h2>
+
+    <div class="form-section">
+        <label class="form-label">Endpoint</label>
+        <input type="text" class="form-control" @bind="endpoint"
+               placeholder="https://your-resource.openai.azure.com" />
+        <small class="form-hint">Your Azure OpenAI resource endpoint URL</small>
+    </div>
+
+    <div class="form-section">
+        <label class="form-label">Deployment Name</label>
+        <input type="text" class="form-control" @bind="deploymentName"
+               placeholder="gpt-4o" />
+        <small class="form-hint">The model deployment name in your Azure OpenAI resource</small>
+    </div>
+
+    <div class="form-section">
+        <label class="form-label">API Key</label>
+        <input type="password" class="form-control" @bind="apiKey"
+               placeholder="Leave empty to use DefaultAzureCredential" />
+        <small class="form-hint">Leave empty to use DefaultAzureCredential (az login, managed identity)</small>
+    </div>
+</div>
+
+<div class="setup-card">
+    <h2>MCP Server</h2>
+
+    <div class="form-section">
+        <label class="form-label">Command</label>
+        <input type="text" class="form-control" @bind="mcpCommand" />
+    </div>
+
+    <div class="form-section">
+        <label class="form-label">Arguments</label>
+        <input type="text" class="form-control" @bind="mcpArguments" />
+        <small class="form-hint">Space-separated arguments for the MCP server command</small>
+    </div>
+</div>
+
+<div class="form-actions" style="margin-bottom: 1.5rem;">
+    <button class="btn btn-primary btn-lg" @onclick="SaveSettings" disabled="@isSaving">
+        @if (isSaving)
+        {
+            <span class="spinner"></span>
+            <span>Saving...</span>
+        }
+        else
+        {
+            <span>Save Settings</span>
+        }
+    </button>
+
+    @if (!string.IsNullOrEmpty(statusMessage))
+    {
+        <div class="alert @(isError ? "alert-error" : "alert-success")" style="margin-top: 1rem;">
+            @statusMessage
+        </div>
+    }
+</div>
+
+<div class="setup-card">
+    <h2>Config file location</h2>
+    <p style="font-size: 0.85rem; color: #6b7280;">Settings are saved to:</p>
+    <pre class="code-block"><code>@settingsFilePath</code></pre>
+    <p style="font-size: 0.85rem; color: #9ca3af; margin-top: 0.5rem;">
+        Changes take effect after restarting the app.
+    </p>
+</div>
+
+@code {
+    private string endpoint = "";
+    private string deploymentName = "";
+    private string apiKey = "";
+    private string mcpCommand = "";
+    private string mcpArguments = "";
+    private bool isSaving;
+    private string? statusMessage;
+    private bool isError;
+
+    private string settingsFilePath = "";
+
+    protected override void OnInitialized()
+    {
+        settingsFilePath = Paths.UserSettingsFile;
+        endpoint = Configuration["AzureOpenAI:Endpoint"] ?? "";
+        deploymentName = Configuration["AzureOpenAI:DeploymentName"] ?? "gpt-4o";
+        apiKey = Configuration["AzureOpenAI:ApiKey"] ?? "";
+        mcpCommand = Configuration["McpServer:Command"] ?? "npx";
+        var args = Configuration.GetSection("McpServer:Arguments").Get<string[]>();
+        mcpArguments = args is not null ? string.Join(" ", args) : "-y @nabsolutions/nab-al-tools-mcp";
+    }
+
+    private async Task SaveSettings()
+    {
+        isSaving = true;
+        statusMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            var argsArray = mcpArguments.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+            var settings = new Dictionary<string, object>
+            {
+                ["AzureOpenAI"] = new Dictionary<string, string>
+                {
+                    ["Endpoint"] = endpoint.Trim(),
+                    ["DeploymentName"] = deploymentName.Trim(),
+                    ["ApiKey"] = apiKey.Trim()
+                },
+                ["McpServer"] = new Dictionary<string, object>
+                {
+                    ["Command"] = mcpCommand.Trim(),
+                    ["Arguments"] = argsArray
+                },
+                ["Translation"] = new Dictionary<string, int>
+                {
+                    ["DefaultBatchSize"] = 20,
+                    ["DefaultPageSize"] = 50
+                }
+            };
+
+            var json = System.Text.Json.JsonSerializer.Serialize(settings,
+                new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+
+            Directory.CreateDirectory(Paths.ConfigDirectory);
+            await File.WriteAllTextAsync(settingsFilePath, json);
+
+            statusMessage = "Settings saved. Restart the app to apply changes.";
+            isError = false;
+        }
+        catch (Exception ex)
+        {
+            statusMessage = $"Failed to save: {ex.Message}";
+            isError = true;
+        }
+        finally
+        {
+            isSaving = false;
+            StateHasChanged();
+        }
+    }
+}

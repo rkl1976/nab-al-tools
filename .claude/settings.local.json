@@ -21,7 +21,9 @@
       "Bash(grep -i \"RunAsync\\\\|RunStreamingAsync\\\\|Thread\\\\|ChatMessage\\\\|conversation\\\\|history\\\\|IList.*ChatMessage\\\\|ChatOptions\" ~/.nuget/packages/microsoft.agents.ai/*/lib/net10.0/*.xml)",
       "Bash(grep -A5 'member name=M:Microsoft.Agents.AI.AIAgent.RunAsync' ~/.nuget/packages/microsoft.agents.ai/*/lib/net10.0/*.xml)",
       "Bash(grep:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(cp:*)",
+      "Bash(rm:*)"
     ]
   }
 }

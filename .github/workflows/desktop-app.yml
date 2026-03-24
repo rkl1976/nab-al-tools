@@ -1,0 +1,135 @@
+name: Desktop App - Build & Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: 'Create GitHub Release with MAUI app'
+        type: boolean
+        default: true
+  push:
+    branches: [main]
+    paths:
+      - 'web/NabXliffApp/**'
+      - 'web/landing/**'
+      - '.github/workflows/desktop-app.yml'
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  # ── Build MAUI App ──
+  build-app:
+    name: Build MAUI Desktop App
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+          dotnet-quality: 'ga'
+
+      - name: Install MAUI workload
+        run: dotnet workload install maui-windows
+
+      - name: Restore
+        run: dotnet restore web/NabXliffApp/NabXliffApp.csproj
+
+      - name: Build
+        run: dotnet build web/NabXliffApp/NabXliffApp.csproj -c Release --no-restore
+
+      - name: Publish (self-contained)
+        run: |
+          dotnet publish web/NabXliffApp/NabXliffApp.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained `
+            -o ./publish
+
+      - name: Create ZIP artifact
+        run: Compress-Archive -Path ./publish/* -DestinationPath ./NabXliffApp-win-x64.zip
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NabXliffApp-win-x64
+          path: ./NabXliffApp-win-x64.zip
+
+  # ── Deploy Landing Page to GitHub Pages ──
+  deploy-pages:
+    name: Deploy Landing Page
+    runs-on: ubuntu-latest
+    needs: build-app
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: NabXliffApp-win-x64
+          path: ./web/landing/downloads/
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./web/landing
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  # ── Create GitHub Release ──
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: build-app
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.create_release }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: NabXliffApp-win-x64
+
+      - name: Get version
+        id: version
+        run: echo "version=$(date +'%Y.%m.%d')" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: desktop-v${{ steps.version.outputs.version }}
+          name: NAB XLIFF Desktop App v${{ steps.version.outputs.version }}
+          body: |
+            ## NAB XLIFF Translator - Desktop App
+
+            Windows desktop application for managing XLIFF translations in Business Central AL projects.
+
+            ### Download
+            Download `NabXliffApp-win-x64.zip`, extract, and run `NabXliffApp.exe`.
+
+            ### Prerequisites
+            - Windows 10/11
+            - [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/)
+            - [Node.js 20+](https://nodejs.org/) (for MCP server)
+
+            ### What's included
+            - AI-powered translation chat
+            - Batch translation with Azure OpenAI
+            - Translation review workflow
+            - Glossary management with term extraction
+            - Built-in 187 BC terms in 24 languages
+          files: NabXliffApp-win-x64.zip
+          draft: false
+          prerelease: false
